@@ -3,7 +3,6 @@ package com.appdev.smartkisan.ui.MainAppScreens
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,11 +13,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.material.ripple.rememberRipple
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -28,17 +25,18 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavHostController
 import com.appdev.smartkisan.R
 import com.appdev.smartkisan.ui.OtherComponents.CustomButton
+import com.appdev.smartkisan.ui.navigation.Routes
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun PlantDisease() {
+fun PlantDisease(controller: NavHostController) {
 
     Scaffold(topBar = {
         TopAppBar(title = {
@@ -101,7 +99,9 @@ fun PlantDisease() {
                     icon = R.drawable.importgallery
                 ) {}
                 Spacer(modifier = Modifier.height(20.dp))
-                CustomButton(onClick = { /*TODO*/ }, text = "Diagnose", width = 1f)
+                CustomButton(onClick = {
+                    controller.navigate(Routes.DiagnosisResult.route)
+                }, text = "Diagnose", width = 1f)
             }
         }
     }

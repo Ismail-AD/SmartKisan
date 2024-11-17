@@ -75,7 +75,7 @@ fun BaseScreen() {
     val hazeState = remember { HazeState() }
 
     val currentRoute = controller.currentBackStackEntryAsState().value?.destination?.route
-    val hideBottomBarRoutes = listOf(Routes.ProductDetailScreen.route)
+    val hideBottomBarRoutes = listOf(Routes.ProductDetailScreen.route, Routes.DiagnosisResult.route)
 
     Scaffold(bottomBar = {
         if (currentRoute !in hideBottomBarRoutes) {
@@ -89,7 +89,8 @@ fun BaseScreen() {
             composable(Routes.HomeScreen.route) { Home() }
             composable(Routes.AccountScreen.route) { Account() }
             composable(Routes.MarketPlace.route) { MarketPlace(controller) }
-            composable(Routes.PlantDisease.route) { PlantDisease() }
+            composable(Routes.PlantDisease.route) { PlantDisease(controller) }
+            composable(Routes.DiagnosisResult.route) { DiagnosisResult(controller) }
             composable(route = Routes.ProductDetailScreen.route) {
                 ProductDetails(controller)
             }
@@ -99,7 +100,7 @@ fun BaseScreen() {
 
 @Composable
 fun GlassmorphicBottomNavigation(hazeState: HazeState, navController: NavHostController) {
-var selectedTabIndex by rememberSaveable { mutableIntStateOf(0) }
+    var selectedTabIndex by rememberSaveable { mutableIntStateOf(0) }
     val isDarkTheme = isSystemInDarkTheme()
     val dayColors = if (isDarkTheme)
         listOf(

@@ -67,27 +67,22 @@ private fun CharView(
 ) {
     val isFocused = text.length == index
     val char = when {
-        index == text.length -> "0"
-        index > text.length -> ""
-        else -> text[index].toString()
+        index < text.length -> text[index].toString()
+        else -> "" // Show an empty string if no input is present
     }
-    Text(
+    Box(
         modifier = Modifier
-            .width(40.dp)
+            .size(40.dp) // Fixed size for consistent dimensions
             .border(
-                1.dp, when {
-                    isFocused -> Color.DarkGray
-                    else -> Color.LightGray
-                }, RoundedCornerShape(8.dp)
-            )
-            .wrapContentHeight(align = Alignment.CenterVertically),
-        text = char,
-        fontSize = 30.sp,
-        color = if (isFocused) {
-            Color.LightGray
-        } else {
-            Color.DarkGray
-        },
-        textAlign = TextAlign.Center
-    )
+                1.dp, if (isFocused) Color.DarkGray else Color.LightGray, RoundedCornerShape(8.dp)
+            ),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = char,
+            fontSize = 30.sp,
+            color = if (isFocused) Color.LightGray else Color.DarkGray,
+            textAlign = TextAlign.Center
+        )
+    }
 }

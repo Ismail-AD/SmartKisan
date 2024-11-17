@@ -54,10 +54,17 @@ fun NumberInput(buttonClick: () -> Unit) {
                 verticalArrangement = Arrangement.spacedBy(20.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Text(text = "OTP Verification", fontWeight = FontWeight.ExtraBold, fontSize = 23.sp, color = MaterialTheme.colorScheme.onBackground)
+                Text(
+                    text = "OTP Verification",
+                    fontWeight = FontWeight.ExtraBold,
+                    fontSize = 23.sp,
+                    color = MaterialTheme.colorScheme.onBackground
+                )
                 Text(
                     text = "We will send to one-time password to this mobile number",
-                    fontSize = 16.sp, textAlign = TextAlign.Center, color = MaterialTheme.colorScheme.onBackground
+                    fontSize = 16.sp,
+                    textAlign = TextAlign.Center,
+                    color = MaterialTheme.colorScheme.onBackground
                 )
                 TextField(
                     value = number,
@@ -66,18 +73,20 @@ fun NumberInput(buttonClick: () -> Unit) {
                             number = input
                         }
                     },
-                    colors = TextFieldDefaults.textFieldColors(
+                    colors = TextFieldDefaults.colors(
                         focusedIndicatorColor = Color.Transparent,
                         unfocusedIndicatorColor = Color.Transparent,
-                        containerColor = Color(0xFFE4E7EE)
+                        focusedContainerColor = Color(0xFFE4E7EE),
+                        unfocusedContainerColor = Color(0xFFE4E7EE)
                     ),
                     placeholder = {
                         Text(
                             text = "Enter mobile number"
                         )
                     },
-                    keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Number), modifier = Modifier.fillMaxWidth()
-                , singleLine = true
+                    keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Number),
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true
                 )
             }
             CustomButton(
