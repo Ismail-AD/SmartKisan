@@ -1,2 +1,198 @@
 package com.appdev.smartkisan.ui.SignUpProcess
 
+import android.net.Uri
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardColors
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.navigation.NavHostController
+import coil3.compose.AsyncImage
+import com.appdev.smartkisan.R
+import com.appdev.smartkisan.ui.OtherComponents.CustomButton
+import com.talhafaki.composablesweettoast.util.SweetToastUtil.SweetError
+
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun UserInfo(controller: NavHostController, buttonClick: () -> Unit) {
+    var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
+    var showToastState by remember { mutableStateOf(Pair(false, "")) }
+
+    var username by remember { mutableStateOf("") }
+
+    val launcher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        if (uri != null) {
+            selectedImageUri = uri
+        } else {
+            showToastState = Pair(true, "No Image Selected !")
+        }
+    }
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+    ) {
+        Column(
+            verticalArrangement = Arrangement.SpaceEvenly,
+            modifier = Modifier
+                .padding(horizontal = 18.dp)
+                .fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Image(painter = painterResource(id = R.drawable.tempicon), contentDescription = "")
+
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = "Set Up Your Profile",
+                    fontWeight = FontWeight.ExtraBold,
+                    fontSize = 23.sp,
+                    color = MaterialTheme.colorScheme.onBackground
+                )
+                Text(
+                    text = "You are almost done!",
+                    fontSize = 16.sp,
+                    textAlign = TextAlign.Center,
+                    color = MaterialTheme.colorScheme.onBackground
+                )
+                Box(   modifier = Modifier.padding(top = 15.dp)) {
+                    Box(
+                        modifier = Modifier
+                            .background(
+                                Brush.verticalGradient(
+                                    colors = listOf(Color(0xFFFF9933), Color(0xFFFF5533))
+                                ), RoundedCornerShape(100.dp)
+                            )
+                            .clip(CircleShape)
+                            .padding(top = 14.dp, start = 10.dp, end = 10.dp)
+                    ) {
+                        if (selectedImageUri == null) {
+                            Image(
+                                painter = painterResource(R.drawable.farmer_cap),
+                                contentDescription = null,
+                                modifier = Modifier
+                                    .align(Alignment.BottomCenter)
+                                    .size(110.dp),
+                                contentScale = ContentScale.FillBounds
+                            )
+                        } else {
+                            AsyncImage(
+                                model = selectedImageUri,
+                                contentDescription = null,
+                                placeholder = painterResource(R.drawable.farmer_cap),
+                                modifier = Modifier.size(110.dp),
+                                contentScale = ContentScale.Crop
+                            )
+                        }
+                    }
+
+
+                    IconButton(onClick = {
+//                        launcher.launch("image/*")
+                    }, modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .size(40.dp)) {
+                        Card(
+                            shape = CircleShape, colors = CardDefaults.cardColors(
+                                containerColor = Color(
+                                    0xFF83E978
+                                )
+                            )
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Add,
+                                contentDescription = "",
+                                tint = Color.Black.copy(alpha = 0.9f),
+                                modifier = Modifier.size(27.dp)
+                            )
+                        }
+                    }
+                }
+                TextField(
+                    value = username,
+                    onValueChange = { input ->
+                        username = input
+                    },
+                    colors = TextFieldDefaults.colors(
+                        focusedIndicatorColor = Color.Transparent,
+                        unfocusedIndicatorColor = Color.Transparent,
+                        focusedContainerColor = Color(0xFFE4E7EE),
+                        unfocusedContainerColor = Color(0xFFE4E7EE),
+                    ),
+                    placeholder = {
+                        Text(
+                            text = "Enter your name"
+                        )
+                    }, modifier = Modifier.fillMaxWidth().padding(top = 15.dp), singleLine = true
+                )
+            }
+
+            CustomButton(
+                onClick = {
+                    if (username.trim().isNotEmpty()) {
+                        buttonClick()
+                    } else {
+                        showToastState = Pair(true, "Username should not be empty!")
+                    }
+                },
+                text = "Continue", // Changed button text to be more context-specific
+                width = 1f
+            )
+        }
+
+
+        if (showToastState.first) {
+            SweetError(
+                message = showToastState.second,
+                duration = Toast.LENGTH_SHORT,
+                padding = PaddingValues(top = 16.dp),
+                contentAlignment = Alignment.TopCenter
+            )
+            showToastState = Pair(false, "")
+
+        }
+    }
+}

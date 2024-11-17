@@ -5,9 +5,9 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.appdev.smartkisan.ui.MainAppScreens.BaseScreen
-import com.appdev.smartkisan.ui.MainAppScreens.ProductDetails
 import com.appdev.smartkisan.ui.SignUpProcess.NumberInput
 import com.appdev.smartkisan.ui.SignUpProcess.OtpInput
+import com.appdev.smartkisan.ui.SignUpProcess.UserInfo
 import com.appdev.smartkisan.ui.SignUpProcess.UserSelection
 import com.appdev.smartkisan.ui.onBoarding.BoardingTemplate
 
@@ -34,6 +34,11 @@ fun NavGraph() {
         }
         composable(route = Routes.OtpInput.route) {
             OtpInput() {
+                controller.navigate(Routes.UserInfo.route)
+            }
+        }
+        composable(route = Routes.UserInfo.route) {
+          UserInfo (controller) {
                 controller.navigate(Routes.Main.route) {
                     popUpTo(controller.graph.startDestinationId)
                 }

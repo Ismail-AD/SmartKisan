@@ -75,5 +75,6 @@ dependencies {
     implementation("com.google.accompanist:accompanist-pager:0.24.13-rc")
     //navigation
     implementation("androidx.navigation:navigation-compose:2.8.4")
+    implementation("com.github.tfaki:ComposableSweetToast:1.0.1")
 
 }
