@@ -39,6 +39,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -46,6 +47,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import coil3.compose.AsyncImage
+import coil3.request.ImageRequest
+import coil3.request.crossfade
 import com.appdev.smartkisan.R
 import com.appdev.smartkisan.ui.OtherComponents.CustomButton
 import com.talhafaki.composablesweettoast.util.SweetToastUtil.SweetError
@@ -65,7 +68,7 @@ fun UserInfo(controller: NavHostController, buttonClick: () -> Unit) {
         if (uri != null) {
             selectedImageUri = uri
         } else {
-            showToastState = Pair(true, "No Image Selected !")
+            showToastState = Pair(selectedImageUri == null, "No Image Selected !")
         }
     }
     Box(
@@ -98,7 +101,7 @@ fun UserInfo(controller: NavHostController, buttonClick: () -> Unit) {
                     textAlign = TextAlign.Center,
                     color = MaterialTheme.colorScheme.onBackground
                 )
-                Box(   modifier = Modifier.padding(top = 15.dp)) {
+                Box(modifier = Modifier.padding(top = 15.dp)) {
                     Box(
                         modifier = Modifier
                             .background(
@@ -107,34 +110,29 @@ fun UserInfo(controller: NavHostController, buttonClick: () -> Unit) {
                                 ), RoundedCornerShape(100.dp)
                             )
                             .clip(CircleShape)
-                            .padding(top = 14.dp, start = 10.dp, end = 10.dp)
                     ) {
-                        if (selectedImageUri == null) {
-                            Image(
-                                painter = painterResource(R.drawable.farmer_cap),
-                                contentDescription = null,
-                                modifier = Modifier
-                                    .align(Alignment.BottomCenter)
-                                    .size(110.dp),
-                                contentScale = ContentScale.FillBounds
-                            )
-                        } else {
-                            AsyncImage(
-                                model = selectedImageUri,
-                                contentDescription = null,
-                                placeholder = painterResource(R.drawable.farmer_cap),
-                                modifier = Modifier.size(110.dp),
-                                contentScale = ContentScale.Crop
-                            )
-                        }
+                        AsyncImage(
+                            model = ImageRequest.Builder(LocalContext.current)
+                                .data(selectedImageUri)
+                                .build(),
+                            contentDescription = "Profile Image",
+                            placeholder = painterResource(R.drawable.farmer),
+                            error = painterResource(R.drawable.farmer),
+                            modifier = Modifier
+                                .size(120.dp)
+                                .padding(),
+                            contentScale = ContentScale.Crop
+                        )
                     }
 
 
-                    IconButton(onClick = {
-//                        launcher.launch("image/*")
-                    }, modifier = Modifier
-                        .align(Alignment.BottomEnd)
-                        .size(40.dp)) {
+                    IconButton(
+                        onClick = {
+                            launcher.launch("image/*")
+                        }, modifier = Modifier
+                            .align(Alignment.BottomEnd)
+                            .size(40.dp)
+                    ) {
                         Card(
                             shape = CircleShape, colors = CardDefaults.cardColors(
                                 containerColor = Color(
@@ -166,7 +164,9 @@ fun UserInfo(controller: NavHostController, buttonClick: () -> Unit) {
                         Text(
                             text = "Enter your name"
                         )
-                    }, modifier = Modifier.fillMaxWidth().padding(top = 15.dp), singleLine = true
+                    }, modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 15.dp), singleLine = true
                 )
             }
 

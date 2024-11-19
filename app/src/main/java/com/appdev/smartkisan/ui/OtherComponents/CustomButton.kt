@@ -28,6 +28,7 @@ import androidx.compose.ui.unit.sp
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CustomButton(
+    modifier: Modifier = Modifier,
     onClick: () -> Unit,
     text: String,
     textColor: Color = Color.White,
@@ -47,7 +48,7 @@ fun CustomButton(
     Card(
         onClick = { onClick() },
         shape = RoundedCornerShape(8.dp),
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth(width)
             .height(height)
             .clip(RoundedCornerShape(8.dp)),
