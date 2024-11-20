@@ -5,6 +5,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.appdev.smartkisan.ui.MainAppScreens.BaseScreen
+import com.appdev.smartkisan.ui.SellerAppScreens.SellerBaseScreen
 import com.appdev.smartkisan.ui.SignUpProcess.NumberInput
 import com.appdev.smartkisan.ui.SignUpProcess.OtpInput
 import com.appdev.smartkisan.ui.SignUpProcess.UserInfo
@@ -39,13 +40,16 @@ fun NavGraph() {
         }
         composable(route = Routes.UserInfo.route) {
           UserInfo (controller) {
-                controller.navigate(Routes.Main.route) {
+                controller.navigate(Routes.SellerMain.route) {
                     popUpTo(controller.graph.startDestinationId)
                 }
             }
         }
         composable(route = Routes.Main.route) {
             BaseScreen()
+        }
+        composable(route = Routes.SellerMain.route) {
+            SellerBaseScreen()
         }
     }
 }

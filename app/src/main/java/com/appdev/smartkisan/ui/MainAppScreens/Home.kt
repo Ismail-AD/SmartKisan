@@ -6,17 +6,13 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -32,11 +28,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavHostController
 import com.appdev.smartkisan.R
+import com.appdev.smartkisan.ui.navigation.Routes
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun Home() {
+fun Home(controller: NavHostController) {
     Scaffold(topBar = {
         TopAppBar(title = {
             Row(
@@ -51,7 +49,9 @@ fun Home() {
                 Text(text = "Smart Kisan", fontSize = 19.sp, fontWeight = FontWeight.Bold)
             }
         }, actions = {
-            IconButton(onClick = { }) {
+            IconButton(onClick = {
+                controller.navigate(Routes.ChatBotScreen.route)
+            }) {
                 Image(
                     painter = painterResource(id = R.drawable.chatbot),
                     contentDescription = "",

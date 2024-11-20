@@ -75,7 +75,8 @@ fun BaseScreen() {
     val hazeState = remember { HazeState() }
 
     val currentRoute = controller.currentBackStackEntryAsState().value?.destination?.route
-    val hideBottomBarRoutes = listOf(Routes.ProductDetailScreen.route, Routes.DiagnosisResult.route)
+    val hideBottomBarRoutes = listOf(Routes.ProductDetailScreen.route, Routes.DiagnosisResult.route,
+        Routes.ChatBotScreen.route )
 
     Scaffold(bottomBar = {
         if (currentRoute !in hideBottomBarRoutes) {
@@ -86,7 +87,8 @@ fun BaseScreen() {
             navController = controller, startDestination = Routes.HomeScreen.route,
             Modifier.padding(innerPadding)
         ) {
-            composable(Routes.HomeScreen.route) { Home() }
+            composable(Routes.HomeScreen.route) { Home(controller) }
+            composable(Routes.ChatBotScreen.route) { ChatBotScreen(controller) }
             composable(Routes.AccountScreen.route) { Account() }
             composable(Routes.MarketPlace.route) { MarketPlace(controller) }
             composable(Routes.PlantDisease.route) { PlantDisease(controller) }
