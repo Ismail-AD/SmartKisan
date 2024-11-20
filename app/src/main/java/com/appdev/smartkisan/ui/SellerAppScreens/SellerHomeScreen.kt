@@ -8,6 +8,7 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -15,12 +16,16 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Divider
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -49,7 +54,9 @@ import androidx.navigation.NavHostController
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
 import com.appdev.smartkisan.R
+import com.appdev.smartkisan.data.Product
 import com.appdev.smartkisan.data.statusCard
+import com.appdev.smartkisan.ui.OtherComponents.SingleCrop
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -68,6 +75,40 @@ fun SellerHomeScreen(controller: NavHostController) {
             )
         )
     }
+
+    val productList = listOf(
+        Product(
+            5,
+            "Herbal Medicine for Plants",
+            400,
+            350,
+            R.drawable.seeds,
+            4.7f,
+            85,
+            description = "This herbal plant medicine is specially formulated to enhance growth and protect your plants from common diseases. Made from natural ingredients, it boosts plant immunity and encourages healthy development without harsh chemicals. Ideal for organic farming and safe for all types of crops and garden plants.",
+            10.0f, "g"
+        ), Product(
+            5,
+            "Herbal Medicine for Plants",
+            400,
+            350,
+            R.drawable.seeds,
+            4.7f,
+            85,
+            description = "This herbal plant medicine is specially formulated to enhance growth and protect your plants from common diseases. Made from natural ingredients, it boosts plant immunity and encourages healthy development without harsh chemicals. Ideal for organic farming and safe for all types of crops and garden plants.",
+            10.0f, "g"
+        ), Product(
+            5,
+            "Herbal Medicine for Plants",
+            400,
+            350,
+            R.drawable.seeds,
+            4.7f,
+            85,
+            description = "This herbal plant medicine is specially formulated to enhance growth and protect your plants from common diseases. Made from natural ingredients, it boosts plant immunity and encourages healthy development without harsh chemicals. Ideal for organic farming and safe for all types of crops and garden plants.",
+            10.0f, "g"
+        )
+    )
     Scaffold(topBar = {
         TopAppBar(title = {
             Text(
@@ -86,8 +127,7 @@ fun SellerHomeScreen(controller: NavHostController) {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(horizontal = 20.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
+                    .padding(horizontal = 20.dp)
             ) {
                 Row(
                     verticalAlignment = Alignment.Bottom,
@@ -123,6 +163,29 @@ fun SellerHomeScreen(controller: NavHostController) {
                 Row(modifier = Modifier.horizontalScroll(rememberScrollState())) {
                     listOfOptions.forEachIndexed { index, statusCard ->
                         StatusCard(index, statusCard)
+                    }
+                }
+                Text(
+                    text = "Popular Products",
+                    fontSize = 19.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onBackground, modifier = Modifier
+                        .padding(top = 20.dp)
+                )
+                HorizontalDivider(
+                    modifier = Modifier
+                        .padding(top = 4.dp),
+                    thickness = 2.dp,
+                    color = Color.Gray.copy(alpha = 0.2f)
+                )
+                LazyRow(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 15.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    items(productList) { item ->
+                        SingleCrop(item,Modifier.width(180.dp)) { }
                     }
                 }
             }
@@ -181,11 +244,14 @@ fun StatusCard(
                     color = Color.Black,
                     fontSize = 27.sp,
                     fontWeight = FontWeight.Bold
-                ), modifier = Modifier.padding(start = 4.dp), color = MaterialTheme.colorScheme.onBackground
+                ),
+                modifier = Modifier.padding(start = 4.dp),
+                color = MaterialTheme.colorScheme.onBackground
             )
         }
     }
 }
+
 @Composable
 fun getDynamicColor(index: Int): Color {
     return if (isSystemInDarkTheme()) {
@@ -194,6 +260,7 @@ fun getDynamicColor(index: Int): Color {
         randomColorForPattern(index)
     }
 }
+
 fun randomColorForPattern(index: Int): Color {
     return when (index % 3) {
         0 -> Color(
@@ -233,6 +300,7 @@ fun randomDynamicNightColor(index: Int): Color {
                 (40..80).random()  // Low brightness for blue
             )
         )
+
         1 -> Color(
             android.graphics.Color.argb(
                 255,
@@ -241,6 +309,7 @@ fun randomDynamicNightColor(index: Int): Color {
                 (100..160).random() // Cooler blue tones
             )
         )
+
         else -> Color(
             android.graphics.Color.argb(
                 255,
