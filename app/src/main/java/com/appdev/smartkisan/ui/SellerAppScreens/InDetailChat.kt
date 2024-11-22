@@ -99,8 +99,7 @@ fun InDetailChatScreen(controller: NavHostController) {
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Bold,
                 letterSpacing = 0.sp,
-                color = Color.Black,
-                textAlign = TextAlign.Start
+                textAlign = TextAlign.Start, color = MaterialTheme.colorScheme.onBackground
             )
         }, navigationIcon = {
             IconButton(onClick = {
