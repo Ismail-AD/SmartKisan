@@ -17,6 +17,7 @@ sealed class Routes(val route: String) {
     object SellerMain : Routes("SellerMain_Screen")
     object SellerHomeScreen : Routes("SellerHome_Screen")
     object SellerInboxScreen : Routes("SellerInbox_Screen")
+    object ChatInDetailScreen : Routes("ChatDetail_Screen")
     object SellerAccountScreen : Routes("SellerAccount_Screen")
 }
 

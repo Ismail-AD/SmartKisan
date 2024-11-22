@@ -62,6 +62,7 @@ import com.appdev.smartkisan.Greeting
 import com.appdev.smartkisan.R
 import com.appdev.smartkisan.Utils.Functions.toConvertTime
 import com.appdev.smartkisan.data.ChatMateData
+import com.appdev.smartkisan.ui.navigation.Routes
 import com.appdev.smartkisan.ui.theme.SmartKisanTheme
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -122,20 +123,24 @@ fun SellerChatScreen(controller: NavHostController, onSearchFocusChange: (Boolea
                             onSearchFocusChange(focusState.isFocused)
                             isFocused = focusState.isFocused
                         },
-                    singleLine = true,leadingIcon = {
-                        if(isFocused){
+                    singleLine = true, leadingIcon = {
+                        if (isFocused) {
                             IconButton(onClick = {
                                 focusManager.clearFocus()
                                 query = ""
                             }) {
-                                Icon(imageVector = Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "")
+                                Icon(
+                                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                    contentDescription = ""
+                                )
                             }
                         }
                     }, shape = RoundedCornerShape(10.dp)
                 )
 
                 LazyColumn(
-                    verticalArrangement = Arrangement.spacedBy(4.dp), modifier = Modifier.padding(top = 10.dp)
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                    modifier = Modifier.padding(top = 10.dp)
                 ) {
                     itemsIndexed(
                         chatData,
@@ -144,7 +149,9 @@ fun SellerChatScreen(controller: NavHostController, onSearchFocusChange: (Boolea
                         Column {
                             ListRowData(
                                 chatMateData = eachContact
-                            )
+                            ) {
+                                controller.navigate(Routes.ChatInDetailScreen.route)
+                            }
                         }
                     }
                 }
@@ -157,14 +164,14 @@ fun SellerChatScreen(controller: NavHostController, onSearchFocusChange: (Boolea
 
 
 @Composable
-fun ListRowData(chatMateData: ChatMateData) {
+fun ListRowData(chatMateData: ChatMateData, onClick: () -> Unit) {
     Row(verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
         modifier = Modifier
             .wrapContentHeight()
             .fillMaxWidth()
             .clickable {
-
+                onClick()
             }) {
         AsyncImage(
             model = ImageRequest.Builder(LocalContext.current)
