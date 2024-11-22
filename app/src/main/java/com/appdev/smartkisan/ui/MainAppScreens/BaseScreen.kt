@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Build
+import androidx.compose.material.icons.rounded.Email
 import androidx.compose.material.icons.rounded.Home
 import androidx.compose.material.icons.rounded.Person
 import androidx.compose.material.icons.rounded.ShoppingCart
@@ -75,12 +76,44 @@ fun BaseScreen() {
     val hazeState = remember { HazeState() }
 
     val currentRoute = controller.currentBackStackEntryAsState().value?.destination?.route
-    val hideBottomBarRoutes = listOf(Routes.ProductDetailScreen.route, Routes.DiagnosisResult.route,
-        Routes.ChatBotScreen.route )
+    val hideBottomBarRoutes = listOf(
+        Routes.ProductDetailScreen.route, Routes.DiagnosisResult.route,
+        Routes.ChatBotScreen.route
+    )
 
     Scaffold(bottomBar = {
         if (currentRoute !in hideBottomBarRoutes) {
-            GlassmorphicBottomNavigation(hazeState, navController = controller)
+            GlassmorphicBottomNavigation(
+                hazeState = hazeState,
+                navController = controller,
+                tabs = listOf(
+                    BottomBarTab(
+                        title = "Home",
+                        icon = Icons.Rounded.Home,
+                        color = if (isSystemInDarkTheme()) Color(0xFFFA6FFF) else Color(0xFFE64A19) // Stronger pink
+                    ),
+                    BottomBarTab(
+                        title = "Diagnosis",
+                        icon = Icons.Rounded.Build,
+                        color = if (isSystemInDarkTheme()) Color(0xFFADFF64) else Color(0xFF2196F3) // Brighter blue
+                    ), BottomBarTab(
+                        title = "Market",
+                        icon = Icons.Rounded.ShoppingCart,
+                        color = if (isSystemInDarkTheme()) Color(0xFFFFA574) else Color(0xFFE91E63)  // More vibrant orange
+                    ), BottomBarTab(
+                        title = "Account",
+                        icon = Icons.Rounded.Person,
+                        color = if (isSystemInDarkTheme()) Color(0xFFADFF64) else Color(0xFF4CAF50) // Deeper green
+                    )
+                )
+            ) { selectedTab ->
+                when (selectedTab.title) {
+                    "Home" -> controller.navigate(Routes.HomeScreen.route)
+                    "Diagnosis" -> controller.navigate(Routes.PlantDisease.route)
+                    "Market" -> controller.navigate(Routes.MarketPlace.route)
+                    "Account" -> controller.navigate(Routes.AccountScreen.route)
+                }
+            }
         }
     }) { innerPadding ->
         NavHost(
@@ -101,7 +134,12 @@ fun BaseScreen() {
 }
 
 @Composable
-fun GlassmorphicBottomNavigation(hazeState: HazeState, navController: NavHostController) {
+fun GlassmorphicBottomNavigation(
+    hazeState: HazeState,
+    navController: NavHostController,
+    tabs: List<CommonBottomBarTab>,
+    onTabSelected: (CommonBottomBarTab) -> Unit
+) {
     var selectedTabIndex by rememberSaveable { mutableIntStateOf(0) }
     val isDarkTheme = isSystemInDarkTheme()
     val dayColors = if (isDarkTheme)
@@ -110,9 +148,10 @@ fun GlassmorphicBottomNavigation(hazeState: HazeState, navController: NavHostCon
             Color.White.copy(alpha = .35f),
         )
     else listOf(
-        Color(0xFF8F8F8F).copy(alpha = 0.35f), // Darker border for light mode
-        Color(0xFF8F8F8F).copy(alpha = 0.2f)  // Subtle gradient
+        Color(0xFF8F8F8F).copy(alpha = 0.35f),
+        Color(0xFF8F8F8F).copy(alpha = 0.2f)
     )
+
     Box(
         modifier = Modifier
             .padding(vertical = 24.dp, horizontal = 20.dp)
@@ -121,48 +160,30 @@ fun GlassmorphicBottomNavigation(hazeState: HazeState, navController: NavHostCon
             .hazeChild(state = hazeState, shape = CircleShape)
             .border(
                 width = if (isDarkTheme) Dp.Hairline else (1.5).dp,
-                brush = Brush.verticalGradient(
-                    colors =
-                    dayColors,
-                ),
+                brush = Brush.verticalGradient(colors = dayColors),
                 shape = CircleShape
             )
     ) {
-        val tabs = listOf(
-            BottomBarTab.Home(isDarkTheme),
-            BottomBarTab.PlantDisease(isDarkTheme),
-            BottomBarTab.Profile(isDarkTheme),
-            BottomBarTab.Settings(isDarkTheme),
-        )
-
         BottomBarTabs(
-            isDarkTheme,
-            tabs,
+            isDarkTheme = isDarkTheme,
+            tabs = tabs,
             selectedTab = selectedTabIndex
         ) {
             selectedTabIndex = tabs.indexOf(it)
-            when (it) {
-                is BottomBarTab.Home -> navController.navigate(Routes.HomeScreen.route)
-                is BottomBarTab.PlantDisease -> navController.navigate(Routes.PlantDisease.route)
-                is BottomBarTab.Profile -> navController.navigate(Routes.MarketPlace.route)
-                is BottomBarTab.Settings -> navController.navigate(Routes.AccountScreen.route)
-            }
+            onTabSelected(it)
         }
 
         val animatedSelectedTabIndex by animateFloatAsState(
-            targetValue = selectedTabIndex.toFloat(), label = "animatedSelectedTabIndex",
+            targetValue = selectedTabIndex.toFloat(),
             animationSpec = spring(
                 stiffness = Spring.StiffnessLow,
-                dampingRatio = Spring.DampingRatioLowBouncy,
+                dampingRatio = Spring.DampingRatioLowBouncy
             )
         )
 
         val animatedColor by animateColorAsState(
             targetValue = tabs[selectedTabIndex].color,
-            label = "animatedColor",
-            animationSpec = spring(
-                stiffness = Spring.StiffnessLow,
-            )
+            animationSpec = spring(stiffness = Spring.StiffnessLow)
         )
 
         Canvas(
@@ -181,48 +202,15 @@ fun GlassmorphicBottomNavigation(hazeState: HazeState, navController: NavHostCon
                 )
             )
         }
-
-        Canvas(
-            modifier = Modifier
-                .fillMaxSize()
-                .clip(CircleShape)
-        ) {
-            val path = Path().apply {
-                addRoundRect(RoundRect(size.toRect(), CornerRadius(size.height)))
-            }
-            val length = PathMeasure().apply { setPath(path, false) }.length
-
-            val tabWidth = size.width / tabs.size
-            drawPath(
-                path,
-                brush = Brush.horizontalGradient(
-                    colors = listOf(
-                        animatedColor.copy(alpha = 0f),
-                        animatedColor.copy(alpha = 1f),
-                        animatedColor.copy(alpha = 1f),
-                        animatedColor.copy(alpha = 0f),
-                    ),
-                    startX = tabWidth * animatedSelectedTabIndex,
-                    endX = tabWidth * (animatedSelectedTabIndex + 1),
-                ),
-                style = Stroke(
-                    width = 6f,
-                    pathEffect = PathEffect.dashPathEffect(
-                        intervals = floatArrayOf(length / 2, length)
-                    )
-                )
-            )
-        }
     }
 }
-
 
 @Composable
 fun BottomBarTabs(
     isDarkTheme: Boolean,
-    tabs: List<BottomBarTab>,
+    tabs: List<CommonBottomBarTab>,
     selectedTab: Int,
-    onTabSelected: (BottomBarTab) -> Unit,
+    onTabSelected: (CommonBottomBarTab) -> Unit,
 ) {
     CompositionLocalProvider(
         LocalTextStyle provides LocalTextStyle.current.copy(
@@ -231,22 +219,18 @@ fun BottomBarTabs(
         ),
         LocalContentColor provides if (isDarkTheme) Color.White else Color.Black.copy(alpha = 0.8f)
     ) {
-        Row(
-            modifier = Modifier.fillMaxSize(),
-        ) {
+        Row(modifier = Modifier.fillMaxSize()) {
             for (tab in tabs) {
                 val alpha by animateFloatAsState(
-                    targetValue = if (selectedTab == tabs.indexOf(tab)) 1f else .4f,
-                    label = "alpha"
+                    targetValue = if (selectedTab == tabs.indexOf(tab)) 1f else .4f, label = ""
                 )
                 val scale by animateFloatAsState(
                     targetValue = if (selectedTab == tabs.indexOf(tab)) 1f else .98f,
                     visibilityThreshold = .000001f,
                     animationSpec = spring(
                         stiffness = Spring.StiffnessLow,
-                        dampingRatio = Spring.DampingRatioMediumBouncy,
-                    ),
-                    label = "scale"
+                        dampingRatio = Spring.DampingRatioMediumBouncy
+                    ), label = ""
                 )
                 Column(
                     modifier = Modifier
@@ -255,12 +239,10 @@ fun BottomBarTabs(
                         .fillMaxHeight()
                         .weight(1f)
                         .pointerInput(Unit) {
-                            detectTapGestures {
-                                onTabSelected(tab)
-                            }
+                            detectTapGestures { onTabSelected(tab) }
                         },
                     horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center,
+                    verticalArrangement = Arrangement.Center
                 ) {
                     Icon(imageVector = tab.icon, contentDescription = "tab ${tab.title}")
                     Text(text = tab.title)
@@ -270,36 +252,16 @@ fun BottomBarTabs(
     }
 }
 
-sealed class BottomBarTab(val title: String, val icon: ImageVector, val color: Color) {
-    class Home(isDarkTheme: Boolean) : BottomBarTab(
-        title = "Home",
-        icon = Icons.Rounded.Home,
-        color = if (isDarkTheme) Color(0xFFFA6FFF) else Color(0xFFE64A19) // Stronger pink
-    )
 
-    class PlantDisease(isDarkTheme: Boolean) : BottomBarTab(
-        title = "Diagnosis",
-        icon = Icons.Rounded.Build,
-        color = if (isDarkTheme) Color(0xFFADFF64) else Color(0xFF2196F3) // Brighter blue
-    )
-
-    class Profile(isDarkTheme: Boolean) : BottomBarTab(
-        title = "Market",
-        icon = Icons.Rounded.ShoppingCart,
-        color = if (isDarkTheme) Color(0xFFFFA574) else Color(0xFFE91E63)  // More vibrant orange
-    )
-
-    class Settings(isDarkTheme: Boolean) : BottomBarTab(
-        title = "Account",
-        icon = Icons.Rounded.Person,
-        color = if (isDarkTheme) Color(0xFFADFF64) else Color(0xFF4CAF50) // Deeper green
-    )
-
-
+interface CommonBottomBarTab {
+    val title: String
+    val icon: ImageVector
+    val color: Color
 }
 
+data class BottomBarTab(
+    override val title: String,
+    override val icon: ImageVector,
+    override val color: Color
+) : CommonBottomBarTab
 
-//@Composable
-//fun BottomNavigatorBar(navController: NavHostController){
-//     BottomNavigation()
-//}
