@@ -38,6 +38,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.layout.ContentScale
@@ -45,18 +46,21 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.core.graphics.component1
-import androidx.core.graphics.component2
-import androidx.core.graphics.component3
 import androidx.navigation.NavHostController
+import androidx.navigation.compose.rememberNavController
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
 import com.appdev.smartkisan.R
 import com.appdev.smartkisan.data.Product
 import com.appdev.smartkisan.data.statusCard
 import com.appdev.smartkisan.ui.OtherComponents.SingleCrop
+import com.appdev.smartkisan.ui.navigation.Routes
+import com.appdev.smartkisan.ui.theme.SmartKisanTheme
+import com.appdev.smartkisan.ui.theme.myGreen
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -165,12 +169,66 @@ fun SellerHomeScreen(controller: NavHostController) {
                         StatusCard(index, statusCard)
                     }
                 }
+                Card(
+                    onClick = {
+                        controller.navigate(Routes.StoreManagementScreen.route)
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 7.dp, bottom = 8.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = if (isSystemInDarkTheme()) Color(
+                            0xFF114646
+                        ) else myGreen
+                    )
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 15.dp),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth(0.7f)
+                                .padding(start = 10.dp),
+                            verticalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            Text(
+                                text = "Store Management",
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White
+                            )
+                            Text(
+                                text = "Update inventory, prices & product details",
+                                fontSize = 14.sp,
+                                color = Color.White.copy(alpha = 0.9f), lineHeight = 21.sp
+                            )
+                        }
+                        Box(
+                            modifier = Modifier
+                                .background(
+                                    Color.White, RoundedCornerShape(50.dp)
+                                )
+                                .padding(15.dp)
+                                .align(Alignment.CenterVertically)
+                        ) {
+                            Image(
+                                painter = painterResource(R.drawable.shops),
+                                modifier = Modifier
+                                    .size(50.dp), contentDescription = "",
+                                contentScale = ContentScale.Crop
+                            )
+                        }
+                    }
+                }
                 Text(
                     text = "Popular Products",
                     fontSize = 19.sp,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onBackground, modifier = Modifier
-                        .padding(top = 20.dp)
+                        .padding(top = 10.dp)
                 )
                 HorizontalDivider(
                     modifier = Modifier
@@ -185,7 +243,7 @@ fun SellerHomeScreen(controller: NavHostController) {
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     items(productList) { item ->
-                        SingleCrop(item,Modifier.width(180.dp)) { }
+                        SingleCrop(item, Modifier.width(180.dp)) { }
                     }
                 }
             }
@@ -329,5 +387,14 @@ private fun getIconResource(iconName: String): Int {
         "Avg. Rating" -> R.drawable.star
         "Total Product Views" -> R.drawable.visibility
         else -> R.drawable.box
+    }
+}
+
+
+@Preview(showBackground = true)
+@Composable
+fun GreetingPreviewy() {
+    SmartKisanTheme {
+        SellerHomeScreen(controller = rememberNavController())
     }
 }

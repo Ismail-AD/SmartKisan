@@ -46,7 +46,7 @@ fun SingleCrop(product: Product,modifier: Modifier = Modifier, onClick: () -> Un
             .height(240.dp),
         shape = RoundedCornerShape(8.dp),
         colors = CardDefaults.cardColors(
-            containerColor = if(isSystemInDarkTheme()) Color(0xFF4E2643) else Color.LightGray.copy(alpha = 0.4f)
+            containerColor = if(isSystemInDarkTheme()) Color(0xDF0E3636) else Color.LightGray.copy(alpha = 0.4f)
         )
     ) {
         Column(
@@ -96,7 +96,7 @@ fun SingleCrop(product: Product,modifier: Modifier = Modifier, onClick: () -> Un
                         Text(
                             text = "Rs. " + product.price.toString(),
                             fontSize = 15.sp,
-                            color = Color.Gray.copy(alpha = 0.8f),
+                            color = Color.Gray.copy(alpha = 0.9f),
                             textDecoration = TextDecoration.LineThrough
                         )
                     } else {

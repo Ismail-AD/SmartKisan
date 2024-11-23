@@ -96,9 +96,8 @@ fun InDetailChatScreen(controller: NavHostController) {
         TopAppBar(title = {
             Text(
                 text = "Saad",
-                fontSize = 18.sp,
+                fontSize = 19.sp,
                 fontWeight = FontWeight.Bold,
-                letterSpacing = 0.sp,
                 textAlign = TextAlign.Start, color = MaterialTheme.colorScheme.onBackground
             )
         }, navigationIcon = {

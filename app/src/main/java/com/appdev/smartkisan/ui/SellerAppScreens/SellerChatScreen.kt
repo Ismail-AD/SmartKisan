@@ -62,6 +62,7 @@ import com.appdev.smartkisan.Greeting
 import com.appdev.smartkisan.R
 import com.appdev.smartkisan.Utils.Functions.toConvertTime
 import com.appdev.smartkisan.data.ChatMateData
+import com.appdev.smartkisan.ui.SignUpProcess.SearchField
 import com.appdev.smartkisan.ui.navigation.Routes
 import com.appdev.smartkisan.ui.theme.SmartKisanTheme
 import java.text.SimpleDateFormat
@@ -74,7 +75,7 @@ fun SellerChatScreen(controller: NavHostController, onSearchFocusChange: (Boolea
     var query by remember {
         mutableStateOf("")
     }
-    var isFocused by remember { mutableStateOf(false) }
+
     val chatData = remember { getDummyChatData() }
     val focusManager = LocalFocusManager.current
     Scaffold(topBar = {
@@ -97,46 +98,55 @@ fun SellerChatScreen(controller: NavHostController, onSearchFocusChange: (Boolea
                     .fillMaxSize()
                     .padding(horizontal = 20.dp)
             ) {
-                TextField(
-                    value = query,
-                    onValueChange = { input ->
-                        query = input
-                    },
-                    colors = TextFieldDefaults.colors(
-                        focusedIndicatorColor = Color.Transparent,
-                        unfocusedIndicatorColor = Color.Transparent,
-                        focusedContainerColor = if (isSystemInDarkTheme()) Color(0xFF114646) else Color(
-                            0xFFE4E7EE
-                        ),
-                        unfocusedContainerColor = if (isSystemInDarkTheme()) Color(0xFF114646) else Color(
-                            0xFFE4E7EE
-                        )
-                    ),
-                    placeholder = {
-                        Text(
-                            text = "Search..."
-                        )
-                    },
+                SearchField(query = query,
+                    placeholder = "Search...",
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .onFocusChanged { focusState ->
-                            onSearchFocusChange(focusState.isFocused)
-                            isFocused = focusState.isFocused
-                        },
-                    singleLine = true, leadingIcon = {
-                        if (isFocused) {
-                            IconButton(onClick = {
-                                focusManager.clearFocus()
-                                query = ""
-                            }) {
-                                Icon(
-                                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                    contentDescription = ""
-                                )
-                            }
-                        }
-                    }, shape = RoundedCornerShape(10.dp)
-                )
+                        .fillMaxWidth(),
+                    onFocusChange = { state -> onSearchFocusChange(state) },
+                    onTextChange = { text -> query = text }) {
+                    focusManager.clearFocus()
+                    query = ""
+                }
+//                TextField(
+//                    value = query,
+//                    onValueChange = { input ->
+//                        query = input
+//                    },
+//                    colors = TextFieldDefaults.colors(
+//                        focusedIndicatorColor = Color.Transparent,
+//                        unfocusedIndicatorColor = Color.Transparent,
+//                        focusedContainerColor = if (isSystemInDarkTheme()) Color(0xFF114646) else Color(
+//                            0xFFE4E7EE
+//                        ),
+//                        unfocusedContainerColor = if (isSystemInDarkTheme()) Color(0xFF114646) else Color(
+//                            0xFFE4E7EE
+//                        )
+//                    ),
+//                    placeholder = {
+//                        Text(
+//                            text = "Search..."
+//                        )
+//                    },
+//                    modifier = Modifier
+//                        .fillMaxWidth()
+//                        .onFocusChanged { focusState ->
+//                            onSearchFocusChange(focusState.isFocused)
+//                            isFocused = focusState.isFocused
+//                        },
+//                    singleLine = true, leadingIcon = {
+//                        if (isFocused) {
+//                            IconButton(onClick = {
+//                                focusManager.clearFocus()
+//                                query = ""
+//                            }) {
+//                                Icon(
+//                                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+//                                    contentDescription = ""
+//                                )
+//                            }
+//                        }
+//                    }, shape = RoundedCornerShape(10.dp)
+//                )
 
                 LazyColumn(
                     verticalArrangement = Arrangement.spacedBy(4.dp),
