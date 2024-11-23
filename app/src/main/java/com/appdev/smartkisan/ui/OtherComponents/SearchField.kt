@@ -1,7 +1,6 @@
-package com.appdev.smartkisan.ui.SignUpProcess
+package com.appdev.smartkisan.ui.OtherComponents
 
 import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -39,10 +38,10 @@ fun SearchField(
         colors = TextFieldDefaults.colors(
             focusedIndicatorColor = Color.Transparent,
             unfocusedIndicatorColor = Color.Transparent,
-            focusedContainerColor = if (isSystemInDarkTheme()) Color(0xFF114646) else Color(
+            focusedContainerColor = if (isSystemInDarkTheme()) Color(0xDF0E3636) else Color(
                 0xFFE4E7EE
             ),
-            unfocusedContainerColor = if (isSystemInDarkTheme()) Color(0xFF114646) else Color(
+            unfocusedContainerColor = if (isSystemInDarkTheme()) Color(0xDF0E3636) else Color(
                 0xFFE4E7EE
             )
         ),
