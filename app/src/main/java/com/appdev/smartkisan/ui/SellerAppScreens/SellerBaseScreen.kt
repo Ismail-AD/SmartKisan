@@ -37,7 +37,7 @@ fun SellerBaseScreen() {
 
     val currentRoute = controller.currentBackStackEntryAsState().value?.destination?.route
     val hideBottomBarRoutes = listOf(
-        Routes.ChatInDetailScreen.route,Routes.StoreManagementScreen.route
+        Routes.ChatInDetailScreen.route, Routes.StoreManagementScreen.route , Routes.AddProductScreen.route
     )
 
     Scaffold(bottomBar = {
@@ -75,8 +75,9 @@ fun SellerBaseScreen() {
             Modifier.padding(innerPadding)
         ) {
             composable(Routes.SellerHomeScreen.route) { SellerHomeScreen(controller) }
-            composable(Routes.ChatInDetailScreen.route) { InDetailChatScreen (controller) }
-            composable(Routes.StoreManagementScreen.route) { StoreManagementScreen (controller) }
+            composable(Routes.ChatInDetailScreen.route) { InDetailChatScreen(controller) }
+            composable(Routes.StoreManagementScreen.route) { StoreManagementScreen(controller) }
+            composable(Routes.AddProductScreen.route) { AddProductScreen(controller) }
             composable(Routes.SellerInboxScreen.route) {
                 SellerChatScreen(controller) { state ->
                     isSearchFocused = state

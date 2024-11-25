@@ -63,13 +63,7 @@ import com.appdev.smartkisan.ui.theme.myGreen
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun StoreManagementScreen(controller: NavHostController) {
-    var categories =
-        listOf(
-            Category("All Products", R.drawable.all_items),
-            Category("Seeds", R.drawable.seed),
-            Category("Fertilizers", R.drawable.fertlizers),
-            Category("Medicine", R.drawable.herbal)
-        )
+
     var expanded by remember { mutableStateOf(false) }
     val items = listOf("All", "Seeds", "Fertilizers", "Medicine")
     var selectedOption by remember { mutableStateOf("All") }
@@ -159,7 +153,7 @@ fun StoreManagementScreen(controller: NavHostController) {
         })
     }, floatingActionButton = {
         FloatingActionButton(
-            onClick = { /* Handle add action */ },
+            onClick = { controller.navigate(Routes.AddProductScreen.route) },
             containerColor = myGreen,
             contentColor = Color.White
         ) {
