@@ -108,6 +108,7 @@ fun AddProductScreen(controller: NavHostController) {
                 .background(MaterialTheme.colorScheme.background)
                 .padding(innerPadding)
         ) {
+            
             Column(
                 modifier = Modifier
                     .imePadding()

@@ -25,19 +25,26 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.appdev.smartkisan.Actions.PhoneAuthAction
 import com.appdev.smartkisan.R
+import com.appdev.smartkisan.States.PhoneAuthState
+import com.appdev.smartkisan.ViewModel.LoginViewModel
 import com.appdev.smartkisan.ui.OtherComponents.CustomButton
 
 @OptIn(ExperimentalMaterial3Api::class)
+
 @Composable
-fun NumberInput(buttonClick: () -> Unit) {
-    var number by remember {
-        mutableStateOf("")
-    }
+fun NumberInputRoot(loginViewModel: LoginViewModel = hiltViewModel()) {
+    NumberInput(loginViewModel.loginState, loginViewModel::onAction)
+}
+
+@Composable
+fun NumberInput(loginState: PhoneAuthState, onAction: (PhoneAuthAction) -> Unit) {
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -67,10 +74,10 @@ fun NumberInput(buttonClick: () -> Unit) {
                     color = MaterialTheme.colorScheme.onBackground
                 )
                 TextField(
-                    value = number,
+                    value = loginState.phoneNumber,
                     onValueChange = { input ->
                         if (input.all { it.isDigit() }) {
-                            number = input
+                            onAction(PhoneAuthAction.numebrChange(input))
                         }
                     },
                     colors = TextFieldDefaults.colors(
@@ -90,9 +97,10 @@ fun NumberInput(buttonClick: () -> Unit) {
                 )
             }
             CustomButton(
-                onClick = { buttonClick() },
+                onClick = { onAction(PhoneAuthAction.SendMeOtp) },
                 text = "Get OTP", width = 1f
             )
         }
     }
 }
+
