@@ -1,5 +1,6 @@
 package com.appdev.smartkisan.ui.SignUpProcess
 
+import android.app.Activity
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -9,12 +10,14 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -22,12 +25,14 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.appdev.smartkisan.Actions.PhoneAuthAction
 import com.appdev.smartkisan.R
@@ -38,18 +43,55 @@ import com.appdev.smartkisan.ui.OtherComponents.CustomButton
 @OptIn(ExperimentalMaterial3Api::class)
 
 @Composable
-fun NumberInputRoot(loginViewModel: LoginViewModel = hiltViewModel()) {
-    NumberInput(loginViewModel.loginState, loginViewModel::onAction)
+fun NumberInputRoot(
+    navigateToNext: () -> Unit,
+    loginViewModel: LoginViewModel = hiltViewModel(),
+    navigateUp: () -> Unit
+) {
+    NumberInput(loginViewModel.loginState, onAction = { action ->
+        when (action) {
+            is PhoneAuthAction.NextScreen -> {
+                navigateToNext()
+            }
+
+            is PhoneAuthAction.GoBack -> {
+                navigateUp()
+            }
+
+            else -> loginViewModel.onAction(action)
+        }
+    })
 }
 
 @Composable
 fun NumberInput(loginState: PhoneAuthState, onAction: (PhoneAuthAction) -> Unit) {
+    val context = LocalContext.current
+    LaunchedEffect(key1 = loginState.otpRequestAccepted) {
+        if (loginState.otpRequestAccepted) {
+            onAction(PhoneAuthAction.NextScreen)
+        }
+    }
 
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
     ) {
+        if (loginState.isLoading) {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+            ) {
+                Column(
+                    modifier = Modifier.fillMaxSize(),
+                    verticalArrangement = Arrangement.Center,
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Dialog(onDismissRequest = { /*TODO*/ }) {
+                        CircularProgressIndicator()
+                    }
+                }
+            }
+        }
         Column(
             verticalArrangement = Arrangement.SpaceEvenly,
             modifier = Modifier
@@ -97,7 +139,14 @@ fun NumberInput(loginState: PhoneAuthState, onAction: (PhoneAuthAction) -> Unit)
                 )
             }
             CustomButton(
-                onClick = { onAction(PhoneAuthAction.SendMeOtp) },
+                onClick = {
+                    onAction(
+                        PhoneAuthAction.SendMeOtp(
+                            loginState.countryCode + loginState.phoneNumber,
+                            context as Activity
+                        )
+                    )
+                },
                 text = "Get OTP", width = 1f
             )
         }

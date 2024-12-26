@@ -46,9 +46,11 @@ fun NavGraph() {
         }
         composable(route = Routes.NumberInput.route) {
 
-            NumberInputRoot()
-//                controller.navigate(Routes.OtpInput.route)
-
+            NumberInputRoot(navigateToNext = {
+                controller.navigate(Routes.OtpInput.route)
+            }) {
+                controller.navigateUp()
+            }
         }
         composable(route = Routes.OtpInput.route) {
             OtpInput() {

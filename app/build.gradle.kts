@@ -5,6 +5,7 @@ plugins {
     id("com.google.gms.google-services")
     id("kotlin-kapt")
     id("com.google.dagger.hilt.android")
+    kotlin("plugin.serialization") version "2.0.0"
 }
 
 android {
@@ -81,8 +82,17 @@ dependencies {
     implementation("androidx.navigation:navigation-compose:2.8.4")
     implementation("com.github.tfaki:ComposableSweetToast:1.0.1")
 
-    kapt("com.google.dagger:hilt-android-compiler:2.44")
-    implementation("com.google.dagger:hilt-android:2.44")
-    implementation("androidx.hilt:hilt-navigation-compose:1.1.0-alpha01")
+    // hilt
+    kapt("com.google.dagger:hilt-android-compiler:2.46")
+    implementation("com.google.dagger:hilt-android:2.46")
+    implementation("androidx.hilt:hilt-navigation-compose:1.2.0")
+
+    implementation(platform("io.github.jan-tennert.supabase:bom:3.0.3"))
+    implementation("io.github.jan-tennert.supabase:postgrest-kt:3.0.3")
+    implementation("io.github.jan-tennert.supabase:auth-kt:3.0.3")
+    implementation("io.github.jan-tennert.supabase:realtime-kt:3.0.3")
+    implementation("io.ktor:ktor-client-android:3.0.2")
+
+
 
 }
