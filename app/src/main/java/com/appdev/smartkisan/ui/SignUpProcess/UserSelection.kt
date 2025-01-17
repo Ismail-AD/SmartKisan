@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -30,39 +29,69 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.appdev.smartkisan.Actions.PhoneAuthAction
 import com.appdev.smartkisan.R
+import com.appdev.smartkisan.States.UserAuthState
+import com.appdev.smartkisan.ViewModel.LoginViewModel
 import com.appdev.smartkisan.ui.OtherComponents.CustomButton
+import kotlin.math.log
+
 
 @Composable
-fun UserSelection(buttonClick:()->Unit) {
-    var selectedRole by remember {
-        mutableIntStateOf(0)
+fun UserTypeRoot(
+    navigateToNext: () -> Unit,
+    loginViewModel: LoginViewModel,
+    navigateUp: () -> Unit
+) {
+    UserSelection(loginViewModel.loginState) { action ->
+        when (action) {
+            is PhoneAuthAction.NextScreen -> {
+                navigateToNext()
+            }
+
+            is PhoneAuthAction.GoBack -> {
+                navigateUp()
+            }
+
+            else -> loginViewModel.onAction(action)
+        }
     }
-    Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background), contentAlignment = Alignment.Center) {
+
+}
+
+@Composable
+fun UserSelection(loginState: UserAuthState, onAction: (PhoneAuthAction) -> Unit) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background),
+        contentAlignment = Alignment.Center
+    ) {
         Column(
-            verticalArrangement = Arrangement.spacedBy(13.dp), modifier = Modifier.padding(horizontal = 14.dp)
+            verticalArrangement = Arrangement.spacedBy(13.dp),
+            modifier = Modifier.padding(horizontal = 14.dp)
         ) {
-            Text(text = "Who Will You Be ?",fontWeight = FontWeight.Bold, fontSize = 23.sp)
+            Text(text = "Who Will You Be ?", fontWeight = FontWeight.Bold, fontSize = 23.sp)
             Spacer(modifier = Modifier.height(8.dp))
             selectionCard(
                 title = "Farmer",
                 features = "Disease detection, weather updates, AI chatbot, daily crop suggestions, and more",
                 image = R.drawable.farmerrole,
-                isSelected = selectedRole == 0
+                isSelected = loginState.userType == "Farmer"
             ) {
-                selectedRole = 0
+                onAction.invoke(PhoneAuthAction.UpdatedUserType(type = "Farmer"))
             }
             selectionCard(
                 title = "Seller",
                 features = "Manage store, sell seeds and fertilizers, upload products, connect with farmers, and more",
                 image = R.drawable.sellerroleplay,
-                isSelected = selectedRole == 1
+                isSelected = loginState.userType == "Seller"
             ) {
-                selectedRole = 1
+                onAction.invoke(PhoneAuthAction.UpdatedUserType(type = "Seller"))
             }
             Spacer(modifier = Modifier.height(13.dp))
             CustomButton(
-                onClick = { buttonClick() },
+                onClick = { onAction.invoke(PhoneAuthAction.NextScreen) },
                 text = "Next", width = 1f
             )
         }
@@ -94,14 +123,18 @@ fun selectionCard(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(horizontal = 6.dp, vertical = 12.dp),
-            verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(5.dp)
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(5.dp)
         ) {
             Image(
                 painter = painterResource(id = image),
                 contentDescription = "",
                 modifier = Modifier.weight(1.7f), contentScale = ContentScale.Fit
             )
-            Column(modifier = Modifier.weight(2f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Column(
+                modifier = Modifier.weight(2f),
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
                 Text(text = title, fontWeight = FontWeight.Bold, fontSize = 19.sp)
                 Text(text = features, lineHeight = 19.sp, fontSize = 15.sp)
             }

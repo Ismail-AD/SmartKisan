@@ -45,30 +45,52 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
 import coil3.request.crossfade
+import com.appdev.smartkisan.Actions.PhoneAuthAction
 import com.appdev.smartkisan.R
+import com.appdev.smartkisan.States.UserAuthState
+import com.appdev.smartkisan.ViewModel.LoginViewModel
 import com.appdev.smartkisan.ui.OtherComponents.CustomButton
 import com.talhafaki.composablesweettoast.util.SweetToastUtil.SweetError
 
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun UserInfo(controller: NavHostController, buttonClick: () -> Unit) {
-    var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
+fun UserInfoInputRoot(
+    navigateToNext: () -> Unit,
+    loginViewModel: LoginViewModel,
+    navigateUp: () -> Unit
+) {
+    UserInfo(loginViewModel.loginState, onAction = { action ->
+        when (action) {
+            is PhoneAuthAction.NextScreen -> {
+                navigateToNext()
+            }
+
+            is PhoneAuthAction.GoBack -> {
+                navigateUp()
+            }
+
+            else -> loginViewModel.onAction(action)
+        }
+    })
+}
+
+@Composable
+fun UserInfo(loginState: UserAuthState, onAction: (PhoneAuthAction) -> Unit) {
+
     var showToastState by remember { mutableStateOf(Pair(false, "")) }
 
-    var username by remember { mutableStateOf("") }
 
     val launcher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
         if (uri != null) {
-            selectedImageUri = uri
-        } else {
-            showToastState = Pair(selectedImageUri == null, "No Image Selected !")
+            onAction.invoke(PhoneAuthAction.SelectedImageUri(uri))
+//            selectedImageUri = uri
         }
     }
     Box(
@@ -113,7 +135,7 @@ fun UserInfo(controller: NavHostController, buttonClick: () -> Unit) {
                     ) {
                         AsyncImage(
                             model = ImageRequest.Builder(LocalContext.current)
-                                .data(selectedImageUri)
+                                .data(loginState.profileImage)
                                 .build(),
                             contentDescription = "Profile Image",
                             placeholder = painterResource(R.drawable.farmer),
@@ -150,9 +172,9 @@ fun UserInfo(controller: NavHostController, buttonClick: () -> Unit) {
                     }
                 }
                 TextField(
-                    value = username,
+                    value = loginState.userName,
                     onValueChange = { input ->
-                        username = input
+                        onAction.invoke(PhoneAuthAction.Username(username = input))
                     },
                     colors = TextFieldDefaults.colors(
                         focusedIndicatorColor = Color.Transparent,
@@ -172,8 +194,8 @@ fun UserInfo(controller: NavHostController, buttonClick: () -> Unit) {
 
             CustomButton(
                 onClick = {
-                    if (username.trim().isNotEmpty()) {
-                        buttonClick()
+                    if (loginState.userName.trim().isNotEmpty()) {
+                        onAction.invoke(PhoneAuthAction.SaveUserProfile)
                     } else {
                         showToastState = Pair(true, "Username should not be empty!")
                     }

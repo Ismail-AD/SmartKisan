@@ -4,20 +4,28 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.runtime.Composable
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
+import com.appdev.smartkisan.ViewModel.LoginViewModel
 import com.appdev.smartkisan.ui.MainAppScreens.BaseScreen
 import com.appdev.smartkisan.ui.SellerAppScreens.SellerBaseScreen
 import com.appdev.smartkisan.ui.SignUpProcess.NumberInputRoot
 import com.appdev.smartkisan.ui.SignUpProcess.OtpInput
+import com.appdev.smartkisan.ui.SignUpProcess.OtpInputRoot
 import com.appdev.smartkisan.ui.SignUpProcess.UserInfo
+import com.appdev.smartkisan.ui.SignUpProcess.UserInfoInputRoot
 import com.appdev.smartkisan.ui.SignUpProcess.UserSelection
+import com.appdev.smartkisan.ui.SignUpProcess.UserTypeRoot
 import com.appdev.smartkisan.ui.onBoarding.BoardingTemplate
 
 @Composable
 fun NavGraph() {
     val controller = rememberNavController()
+    val loginViewModel: LoginViewModel = hiltViewModel()
     NavHost(navController = controller,
         startDestination = Routes.OnBoarding.route,
         enterTransition = {
@@ -40,28 +48,42 @@ fun NavGraph() {
             }
         }
         composable(route = Routes.RoleSelect.route) {
-            UserSelection {
+            UserTypeRoot(navigateToNext = {
                 controller.navigate(Routes.NumberInput.route)
+            }, loginViewModel = loginViewModel) {
+                controller.navigateUp()
             }
         }
         composable(route = Routes.NumberInput.route) {
 
             NumberInputRoot(navigateToNext = {
                 controller.navigate(Routes.OtpInput.route)
-            }) {
+            }, loginViewModel = loginViewModel) {
                 controller.navigateUp()
             }
         }
-        composable(route = Routes.OtpInput.route) {
-            OtpInput() {
+        composable(
+            route = Routes.OtpInput.route
+        ) {
+            OtpInputRoot(navigateToNext = {
                 controller.navigate(Routes.UserInfo.route)
+            }, loginViewModel = loginViewModel) {
+                controller.navigateUp()
             }
         }
         composable(route = Routes.UserInfo.route) {
-            UserInfo(controller) {
-                controller.navigate(Routes.SellerMain.route) {
-                    popUpTo(controller.graph.startDestinationId)
+            UserInfoInputRoot(navigateToNext = {
+                when (loginViewModel.loginState.userType) {
+                    "Farmer" -> {
+                        controller.navigate(Routes.Main.route)
+                    }
+
+                    "Seller" -> {
+                        controller.navigate(Routes.SellerMain.route)
+                    }
                 }
+            }, loginViewModel = loginViewModel) {
+                controller.navigateUp()
             }
         }
         composable(route = Routes.Main.route) {

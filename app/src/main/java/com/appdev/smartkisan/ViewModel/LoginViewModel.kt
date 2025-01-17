@@ -1,6 +1,5 @@
 package com.appdev.smartkisan.ViewModel
 
-import android.app.Activity
 import android.util.Log
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -9,7 +8,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.appdev.smartkisan.Actions.PhoneAuthAction
 import com.appdev.smartkisan.Repository.Repository
-import com.appdev.smartkisan.States.PhoneAuthState
+import com.appdev.smartkisan.States.UserAuthState
 import com.appdev.smartkisan.Utils.ResultState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
@@ -19,7 +18,7 @@ import javax.inject.Inject
 @HiltViewModel
 class LoginViewModel @Inject constructor(val repository: Repository) : ViewModel() {
 
-    var loginState by mutableStateOf(PhoneAuthState())
+    var loginState by mutableStateOf(UserAuthState())
         private set
 
 
@@ -32,7 +31,6 @@ class LoginViewModel @Inject constructor(val repository: Repository) : ViewModel
                             is ResultState.Failure -> loginState.copy(errorMessage = result.msg.localizedMessage)
                             ResultState.Loading -> loginState.copy(isLoading = true)
                             is ResultState.Success -> {
-                                Log.d("Repository", "AT VIEWMODEL : SUCCESS")
                                 loginState.copy(otpRequestAccepted = true)
                             }
                         }
@@ -59,7 +57,6 @@ class LoginViewModel @Inject constructor(val repository: Repository) : ViewModel
                             is ResultState.Failure -> loginState.copy(errorMessage = result.msg.localizedMessage)
                             ResultState.Loading -> loginState.copy(isLoading = true)
                             is ResultState.Success -> {
-                                Log.d("Repository", "AT VIEWMODEL : SUCCESS")
                                 loginState.copy(isOtpVerified = true)
                             }
                         }
@@ -69,6 +66,21 @@ class LoginViewModel @Inject constructor(val repository: Repository) : ViewModel
 
             is PhoneAuthAction.otpChange -> {
                 loginState = loginState.copy(otp = action.updatedCode)
+            }
+
+            is PhoneAuthAction.SelectedImageUri -> {
+                loginState = loginState.copy(profileImage = action.imageUri)
+            }
+            is PhoneAuthAction.Username -> {
+                loginState = loginState.copy(userName = action.username)
+            }
+
+            PhoneAuthAction.SaveUserProfile -> {
+                // take image , number and username form login state and save to db
+            }
+
+            is PhoneAuthAction.UpdatedUserType -> {
+                loginState = loginState.copy(userType = action.type)
             }
         }
     }

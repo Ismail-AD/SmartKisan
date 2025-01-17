@@ -1,6 +1,8 @@
 package com.appdev.smartkisan.States
 
-data class PhoneAuthState(
+import android.net.Uri
+
+data class UserAuthState(
     val phoneNumber: String = "",
     val countryCode: String = "+92",
     val isOtpValid: Boolean = false,
@@ -8,5 +10,8 @@ data class PhoneAuthState(
     val errorMessage: String? = null,
     val isLoading: Boolean = false,
     val otpRequestAccepted:Boolean = false,
-    val isOtpVerified:Boolean = false
+    val isOtpVerified:Boolean = false,
+    val userName: String = "",
+    val userType: String = "Farmer",
+    val profileImage: Uri? = null,
 )

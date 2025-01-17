@@ -18,10 +18,6 @@ import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -36,7 +32,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.appdev.smartkisan.Actions.PhoneAuthAction
 import com.appdev.smartkisan.R
-import com.appdev.smartkisan.States.PhoneAuthState
+import com.appdev.smartkisan.States.UserAuthState
 import com.appdev.smartkisan.ViewModel.LoginViewModel
 import com.appdev.smartkisan.ui.OtherComponents.CustomButton
 
@@ -45,7 +41,7 @@ import com.appdev.smartkisan.ui.OtherComponents.CustomButton
 @Composable
 fun NumberInputRoot(
     navigateToNext: () -> Unit,
-    loginViewModel: LoginViewModel = hiltViewModel(),
+    loginViewModel: LoginViewModel,
     navigateUp: () -> Unit
 ) {
     NumberInput(loginViewModel.loginState, onAction = { action ->
@@ -64,7 +60,7 @@ fun NumberInputRoot(
 }
 
 @Composable
-fun NumberInput(loginState: PhoneAuthState, onAction: (PhoneAuthAction) -> Unit) {
+fun NumberInput(loginState: UserAuthState, onAction: (PhoneAuthAction) -> Unit) {
     val context = LocalContext.current
     LaunchedEffect(key1 = loginState.otpRequestAccepted) {
         if (loginState.otpRequestAccepted) {

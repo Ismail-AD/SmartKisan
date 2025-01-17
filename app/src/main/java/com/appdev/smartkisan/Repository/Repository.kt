@@ -36,6 +36,7 @@ class Repository @Inject constructor(
             try {
                 val result = supabaseClient.auth.signUpWith(Phone) {
                     phone = phoneNumber
+                    password = "default"
                 }
                 if (result != null) {
                     emit(ResultState.Success("Sign-up successful"))
