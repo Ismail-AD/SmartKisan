@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -57,7 +58,11 @@ fun OtpInputRoot(
 
 @Composable
 fun OtpInput(number: String, loginState: UserAuthState, onAction: (PhoneAuthAction) -> Unit) {
-
+    LaunchedEffect(key1 = loginState.isOtpVerified) {
+        if (loginState.isOtpVerified) {
+            onAction(PhoneAuthAction.NextScreen)
+        }
+    }
     Box(
         modifier = Modifier
             .fillMaxSize()

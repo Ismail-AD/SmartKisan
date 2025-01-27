@@ -4,93 +4,124 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import androidx.navigation.navArgument
 import com.appdev.smartkisan.ViewModel.LoginViewModel
 import com.appdev.smartkisan.ui.MainAppScreens.BaseScreen
 import com.appdev.smartkisan.ui.SellerAppScreens.SellerBaseScreen
 import com.appdev.smartkisan.ui.SignUpProcess.NumberInputRoot
-import com.appdev.smartkisan.ui.SignUpProcess.OtpInput
 import com.appdev.smartkisan.ui.SignUpProcess.OtpInputRoot
-import com.appdev.smartkisan.ui.SignUpProcess.UserInfo
 import com.appdev.smartkisan.ui.SignUpProcess.UserInfoInputRoot
-import com.appdev.smartkisan.ui.SignUpProcess.UserSelection
 import com.appdev.smartkisan.ui.SignUpProcess.UserTypeRoot
 import com.appdev.smartkisan.ui.onBoarding.BoardingTemplate
 
 @Composable
-fun NavGraph() {
+fun NavGraph(
+    notInitialLaunch: Boolean,
+    userType: String?,
+    userId: String?,
+    userAccessToken: String?,
+    saveNewToken: (String) -> Unit
+) {
     val controller = rememberNavController()
     val loginViewModel: LoginViewModel = hiltViewModel()
-    NavHost(navController = controller,
-        startDestination = Routes.OnBoarding.route,
-        enterTransition = {
-            fadeIn(animationSpec = tween(500, delayMillis = 90))
-        },
-        exitTransition = {
-            fadeOut(animationSpec = tween(90))
-        },
-        popEnterTransition = {
-            fadeIn(animationSpec = tween(500, delayMillis = 90))
-        },
-        popExitTransition = {
-            fadeOut(animationSpec = tween(90))
-        }) {
-        composable(route = Routes.OnBoarding.route) {
-            BoardingTemplate {
-                controller.navigate(Routes.RoleSelect.route) {
-                    popUpTo(controller.graph.startDestinationId)
+
+    val initialRoute = if (userId != null && userType != null) {
+        userAccessToken?.let { token ->
+            loginViewModel.refreshToken(token) { newtoken ->
+                newtoken?.let { newToken ->
+                    saveNewToken(newToken)
                 }
             }
         }
-        composable(route = Routes.RoleSelect.route) {
-            UserTypeRoot(navigateToNext = {
-                controller.navigate(Routes.NumberInput.route)
-            }, loginViewModel = loginViewModel) {
-                controller.navigateUp()
-            }
+        when (userType) {
+            "Farmer" -> Routes.Main.route
+            "Seller" -> Routes.SellerMain.route
+            else -> getLaunchRoute(notInitialLaunch)
         }
-        composable(route = Routes.NumberInput.route) {
+    } else {
+        getLaunchRoute(notInitialLaunch)
+    }
 
-            NumberInputRoot(navigateToNext = {
-                controller.navigate(Routes.OtpInput.route)
-            }, loginViewModel = loginViewModel) {
-                controller.navigateUp()
-            }
-        }
-        composable(
-            route = Routes.OtpInput.route
-        ) {
-            OtpInputRoot(navigateToNext = {
-                controller.navigate(Routes.UserInfo.route)
-            }, loginViewModel = loginViewModel) {
-                controller.navigateUp()
-            }
-        }
-        composable(route = Routes.UserInfo.route) {
-            UserInfoInputRoot(navigateToNext = {
-                when (loginViewModel.loginState.userType) {
-                    "Farmer" -> {
-                        controller.navigate(Routes.Main.route)
-                    }
-
-                    "Seller" -> {
-                        controller.navigate(Routes.SellerMain.route)
+    if (initialRoute != null) {
+        NavHost(navController = controller,
+            startDestination = initialRoute,
+            enterTransition = {
+                fadeIn(animationSpec = tween(500, delayMillis = 90))
+            },
+            exitTransition = {
+                fadeOut(animationSpec = tween(90))
+            },
+            popEnterTransition = {
+                fadeIn(animationSpec = tween(500, delayMillis = 90))
+            },
+            popExitTransition = {
+                fadeOut(animationSpec = tween(90))
+            }) {
+            composable(route = Routes.OnBoarding.route) {
+                BoardingTemplate {
+                    controller.navigate(Routes.RoleSelect.route) {
+                        popUpTo(controller.graph.startDestinationId)
                     }
                 }
-            }, loginViewModel = loginViewModel) {
-                controller.navigateUp()
+            }
+            composable(route = Routes.RoleSelect.route) {
+                UserTypeRoot(navigateToNext = {
+                    controller.navigate(Routes.NumberInput.route)
+                }, loginViewModel = loginViewModel) {
+                    controller.navigateUp()
+                }
+            }
+            composable(route = Routes.NumberInput.route) {
+
+                NumberInputRoot(navigateToNext = {
+                    controller.navigate(Routes.OtpInput.route)
+                }, loginViewModel = loginViewModel) {
+                    controller.navigateUp()
+                }
+            }
+            composable(
+                route = Routes.OtpInput.route
+            ) {
+                OtpInputRoot(navigateToNext = {
+                    controller.navigate(Routes.UserInfo.route)
+                }, loginViewModel = loginViewModel) {
+                    controller.navigateUp()
+                }
+            }
+            composable(route = Routes.UserInfo.route) {
+                UserInfoInputRoot(navigateToNext = {
+                    when (loginViewModel.loginState.userType) {
+                        "Farmer" -> {
+                            controller.navigate(Routes.Main.route)
+                        }
+
+                        "Seller" -> {
+                            controller.navigate(Routes.SellerMain.route)
+                        }
+                    }
+                }, loginViewModel = loginViewModel) {
+                    controller.navigateUp()
+                }
+            }
+            composable(route = Routes.Main.route) {
+                BaseScreen()
+            }
+            composable(route = Routes.SellerMain.route) {
+                SellerBaseScreen()
             }
         }
-        composable(route = Routes.Main.route) {
-            BaseScreen()
-        }
-        composable(route = Routes.SellerMain.route) {
-            SellerBaseScreen()
-        }
+    }
+}
+
+fun getLaunchRoute(notInitialLaunch: Boolean): String {
+    return if (notInitialLaunch) {
+        Routes.NumberInput.route
+    } else {
+        Routes.OnBoarding.route
     }
 }

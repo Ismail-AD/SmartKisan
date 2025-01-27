@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
@@ -6,11 +8,18 @@ plugins {
     id("kotlin-kapt")
     id("com.google.dagger.hilt.android")
     kotlin("plugin.serialization") version "2.0.0"
+    id("com.google.devtools.ksp")
 }
 
 android {
     namespace = "com.appdev.smartkisan"
     compileSdk = 34
+
+    val localProperties = Properties()
+    localProperties.load(File(rootDir, "local.properties").inputStream())
+
+    val supabaseKey: String = localProperties.getProperty("supabaseKey") ?: ""
+    val supabaseUrl: String = localProperties.getProperty("supabaseUrl") ?: ""
 
     defaultConfig {
         applicationId = "com.appdev.smartkisan"
@@ -23,6 +32,9 @@ android {
         vectorDrawables {
             useSupportLibrary = true
         }
+
+        buildConfigField("String", "SUPABASE_KEY", "\"$supabaseKey\"")
+        buildConfigField("String", "SUPABASE_URL", "\"$supabaseUrl\"")
     }
 
     buildTypes {
@@ -43,6 +55,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
     composeOptions {
         kotlinCompilerExtensionVersion = "1.4.3"
@@ -91,7 +104,15 @@ dependencies {
     implementation("io.github.jan-tennert.supabase:postgrest-kt:3.0.3")
     implementation("io.github.jan-tennert.supabase:auth-kt:3.0.3")
     implementation("io.github.jan-tennert.supabase:realtime-kt:3.0.3")
+    implementation("io.github.jan-tennert.supabase:storage-kt:3.0.3")
     implementation("io.ktor:ktor-client-android:3.0.2")
+
+    //Room
+    implementation("androidx.room:room-runtime:2.6.1")
+    implementation("androidx.room:room-ktx:2.6.1")
+    annotationProcessor("androidx.room:room-compiler:2.6.1")
+    ksp("androidx.room:room-compiler:2.6.1")
+
 
 
 

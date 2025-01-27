@@ -1,6 +1,7 @@
 package com.appdev.smartkisan.ui.SignUpProcess
 
 import android.net.Uri
+import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -21,6 +22,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardColors
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -29,6 +31,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -45,6 +48,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import coil3.compose.AsyncImage
@@ -53,9 +57,11 @@ import coil3.request.crossfade
 import com.appdev.smartkisan.Actions.PhoneAuthAction
 import com.appdev.smartkisan.R
 import com.appdev.smartkisan.States.UserAuthState
+import com.appdev.smartkisan.Utils.SessionManagement
 import com.appdev.smartkisan.ViewModel.LoginViewModel
 import com.appdev.smartkisan.ui.OtherComponents.CustomButton
 import com.talhafaki.composablesweettoast.util.SweetToastUtil.SweetError
+import java.net.URI
 
 
 @Composable
@@ -82,9 +88,29 @@ fun UserInfoInputRoot(
 @Composable
 fun UserInfo(loginState: UserAuthState, onAction: (PhoneAuthAction) -> Unit) {
 
+    val context = LocalContext.current
+
+
     var showToastState by remember { mutableStateOf(Pair(false, "")) }
 
-
+    LaunchedEffect(key1 = loginState.dataSaved) {
+        if (loginState.dataSaved) {
+            SessionManagement.setOnboardingCompleted(context, true)
+            SessionManagement.saveUserType(
+                context,
+                userType = loginState.userType
+            )
+            SessionManagement.saveUserId(
+                context,
+                userId = loginState.userId,
+            )
+            SessionManagement.saveAccessToken(
+                context,
+                accessToken = loginState.accessToken
+            )
+            onAction(PhoneAuthAction.NextScreen)
+        }
+    }
     val launcher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
@@ -98,6 +124,21 @@ fun UserInfo(loginState: UserAuthState, onAction: (PhoneAuthAction) -> Unit) {
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
     ) {
+        if (loginState.isLoading) {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+            ) {
+                Column(
+                    modifier = Modifier.fillMaxSize(),
+                    verticalArrangement = Arrangement.Center,
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Dialog(onDismissRequest = { /*TODO*/ }) {
+                        CircularProgressIndicator()
+                    }
+                }
+            }
+        }
         Column(
             verticalArrangement = Arrangement.SpaceEvenly,
             modifier = Modifier
@@ -195,7 +236,25 @@ fun UserInfo(loginState: UserAuthState, onAction: (PhoneAuthAction) -> Unit) {
             CustomButton(
                 onClick = {
                     if (loginState.userName.trim().isNotEmpty()) {
-                        onAction.invoke(PhoneAuthAction.SaveUserProfile)
+                        val imageBytes = loginState.profileImage?.let { uri ->
+                            try {
+                                context.contentResolver.openInputStream(uri)?.use {
+                                    it.readBytes()
+                                }
+                            } catch (e: Exception) {
+                                showToastState = Pair(true, "Failed to process image!")
+                                null
+                            }
+                        }
+                        if (imageBytes != null) {
+                            Log.d("CJK", "${imageBytes.size}")
+                        }
+                        onAction.invoke(
+                            PhoneAuthAction.SaveUserProfile(
+                                imageByteArray = imageBytes,
+                                loginState.profileImage
+                            )
+                        )
                     } else {
                         showToastState = Pair(true, "Username should not be empty!")
                     }

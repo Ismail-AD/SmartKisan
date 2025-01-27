@@ -13,5 +13,5 @@ sealed interface PhoneAuthAction {
     data class VerifyOtp(val number: String,val code:String) : PhoneAuthAction
     data object GoBack: PhoneAuthAction
     data object NextScreen: PhoneAuthAction
-    data object SaveUserProfile: PhoneAuthAction
+    data class SaveUserProfile(val imageByteArray: ByteArray?,val imageUri: Uri?) : PhoneAuthAction
 }

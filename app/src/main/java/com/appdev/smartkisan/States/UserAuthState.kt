@@ -9,9 +9,12 @@ data class UserAuthState(
     val otp: String = "",
     val errorMessage: String? = null,
     val isLoading: Boolean = false,
-    val otpRequestAccepted:Boolean = false,
-    val isOtpVerified:Boolean = false,
+    val otpRequestAccepted: Boolean = false,
+    val isOtpVerified: Boolean = false,
     val userName: String = "",
     val userType: String = "Farmer",
     val profileImage: Uri? = null,
+    val dataSaved: Boolean = false,
+    var userId: String = "",
+    var accessToken: String = ""
 )

@@ -1,38 +1,64 @@
 package com.appdev.smartkisan.Repository
 
-import android.app.Activity
+import android.net.Uri
 import android.util.Log
-import android.widget.Toast
+import com.appdev.smartkisan.Room.Dao.UserInfoDao
 import com.appdev.smartkisan.Utils.ResultState
-import com.google.firebase.FirebaseException
+import com.appdev.smartkisan.data.UserEntity
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.auth.PhoneAuthCredential
-import com.google.firebase.auth.PhoneAuthOptions
-import com.google.firebase.auth.PhoneAuthProvider
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.OtpType
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.auth.providers.builtin.Phone
-import kotlinx.coroutines.channels.awaitClose
+import io.github.jan.supabase.auth.user.UserSession
+import io.github.jan.supabase.postgrest.from
+import io.github.jan.supabase.storage.storage
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.flow
-import java.util.concurrent.TimeUnit
+import kotlinx.coroutines.withContext
+import java.util.UUID
 import javax.inject.Inject
 
 class Repository @Inject constructor(
     val firebaseAuth: FirebaseAuth,
-    val supabaseClient: SupabaseClient
+    val supabaseClient: SupabaseClient,
+    val userInfoDao: UserInfoDao
 ) {
-    private lateinit var omVerificationCode: String
+    private val profileImageBucketId = "profileImages"
+    private val profileImageFolderPath = "public/1cp17k1_1"
 
+
+    suspend fun refreshUserInfo(accessToken: String?, saveNewToken: () -> Unit) {
+        withContext(Dispatchers.IO) {
+            if (accessToken != null) {
+                supabaseClient.auth.retrieveUser(accessToken)
+                supabaseClient.auth.refreshCurrentSession()
+                saveNewToken()
+            }
+        }
+    }
+
+
+    suspend fun fetchUserInfo(): Flow<ResultState<UserEntity>> = flow {
+        getCurrentUserId()?.let { uid ->
+            emit(ResultState.Loading)
+            try {
+                val user = supabaseClient.from("users").select {
+                    filter {
+                        eq("id", uid)
+                    }
+                }.decodeSingle<UserEntity>()
+                emit(ResultState.Success(user))
+            } catch (e: Exception) {
+                emit(ResultState.Failure(e))
+            }
+        }
+    }
 
     fun signUpUserWithSupaBase(phoneNumber: String): Flow<ResultState<String>> =
         flow {
-            Log.d("SupabaseRepository", "Starting signUpUserWithSupabase with phone: $phoneNumber")
             emit(ResultState.Loading)
-            Log.d("SupabaseRepository", "ResultState.Loading emitted")
-
             try {
                 val result = supabaseClient.auth.signUpWith(Phone) {
                     phone = phoneNumber
@@ -42,7 +68,6 @@ class Repository @Inject constructor(
                     emit(ResultState.Success("Sign-up successful"))
                 }
             } catch (e: Exception) {
-                Log.e("SupabaseRepository", "Exception during sign-up: ${e.message}", e)
                 emit(ResultState.Failure(e))
             }
         }
@@ -50,72 +75,86 @@ class Repository @Inject constructor(
     fun verifyOtp(phoneNumber: String, otp: String): Flow<ResultState<String>> =
         flow {
             emit(ResultState.Loading)
+
             try {
-                supabaseClient.auth.verifyPhoneOtp(type = OtpType.Phone.SMS, phone = phoneNumber, token = otp)
+                supabaseClient.auth.verifyPhoneOtp(
+                    type = OtpType.Phone.SMS,
+                    phone = phoneNumber,
+                    token = otp
+                )
                 emit(ResultState.Success("OTP verified successfully"))
             } catch (e: Exception) {
-                Log.e("SupabaseRepository", "OTP verification failed: ${e.message}", e)
                 emit(ResultState.Failure(e))
             }
         }
 
+    suspend fun imageUploading(imageUri: Uri, imageBytes: ByteArray): String {
+        return withContext(Dispatchers.IO) {
+            try {
+                val extension = when {
+                    // Try to get from Uri
+                    imageUri.lastPathSegment?.contains(".") == true ->
+                        imageUri.lastPathSegment?.substringAfterLast('.')?.lowercase()
+                    // Fallback to detecting from bytes
+                    else -> when {
+                        imageBytes.size >= 2 && imageBytes[0] == 0xFF.toByte() && imageBytes[1] == 0xD8.toByte() -> "jpg"
+                        imageBytes.size >= 8 && String(
+                            imageBytes.take(8).toByteArray()
+                        ) == "PNG\r\n\u001a\n" -> "png"
 
-    fun signUpUser(phone: String, activity: Activity): Flow<ResultState<String>> = callbackFlow {
-        Log.d("Repository", "Starting signUpUser with phone: $phone")
-        trySend(ResultState.Loading)
-        Log.d("Repository", "ResultState.Loading sent")
+                        else -> "jpg" // Default fallback
+                    }
+                } ?: "jpg"
 
-        val callbacks = object : PhoneAuthProvider.OnVerificationStateChangedCallbacks() {
-            override fun onVerificationCompleted(p0: PhoneAuthCredential) {
-                Log.d("Repository", "Verification completed with credential: $p0")
+                // Validate extension
+                val safeExtension = when (extension.lowercase()) {
+                    "jpg", "jpeg", "png", "gif" -> extension
+                    else -> "jpg"
+                }
+                val fileName = "${UUID.randomUUID()}.$safeExtension"
+                val fullPath = "$profileImageFolderPath/$fileName"
+                val bucket = supabaseClient.storage.from(profileImageBucketId)
+                bucket.upload(
+                    path = fullPath,
+                    data = imageBytes
+                ) {
+                    upsert = false
+                }
+                bucket.publicUrl(fullPath)
+            } catch (e: Exception) {
+                throw Exception("Failed to upload image: ${e.message}")
             }
-
-            override fun onVerificationFailed(p0: FirebaseException) {
-                Log.e("Repository", "Verification failed with exception: ${p0.message}", p0)
-                trySend(ResultState.Failure(p0))
-            }
-
-            override fun onCodeSent(
-                verificationCode: String,
-                p1: PhoneAuthProvider.ForceResendingToken
-            ) {
-                super.onCodeSent(verificationCode, p1)
-                Log.d("Repository", "OTP sent successfully. Verification code: $verificationCode")
-                trySend(ResultState.Success("OTP Sent Successfully"))
-                omVerificationCode = verificationCode
-            }
-        }
-
-        Log.d("Repository", "Building PhoneAuthOptions")
-        val options = PhoneAuthOptions.newBuilder(firebaseAuth)
-            .setPhoneNumber(phone)
-            .setTimeout(60L, TimeUnit.SECONDS)
-            .setActivity(activity)
-            .setCallbacks(callbacks)
-            .build()
-
-        Log.d("Repository", "Starting phone number verification")
-        PhoneAuthProvider.verifyPhoneNumber(options)
-
-        awaitClose {
-            Log.d("Repository", "CallbackFlow closed")
-            close()
         }
     }
 
-    fun signWithCredential(otp: String): Flow<ResultState<String>> = callbackFlow {
-        trySend(ResultState.Loading)
-        val credential = PhoneAuthProvider.getCredential(omVerificationCode, otp)
-        firebaseAuth.signInWithCredential(credential)
-            .addOnCompleteListener {
-                if (it.isSuccessful)
-                    trySend(ResultState.Success("otp verified"))
-            }.addOnFailureListener {
-                trySend(ResultState.Failure(it))
+
+    fun insertUser(
+        userEntity: UserEntity,
+        imageByteArray: ByteArray?,
+        imageUri: Uri?
+    ): Flow<ResultState<String>> =
+        flow {
+            getCurrentUserId()?.let { uid ->
+                emit(ResultState.Loading)
+                try {
+                    val imageUrl = if (imageByteArray != null && imageUri != null) {
+                        imageUploading(imageUri, imageByteArray)
+                    } else {
+                        ""
+                    }
+                    userEntity.imageUrl = imageUrl
+                    userEntity.id = uid
+                    supabaseClient.from("users").insert(userEntity)
+                    emit(ResultState.Success("Profile created successfully"))
+                } catch (e: Exception) {
+                    Log.e("SupabaseRepository", "Profile creation failed: ${e.message}", e)
+                    emit(ResultState.Failure(e))
+                }
             }
-        awaitClose {
-            close()
         }
+
+    private fun getCurrentUserId(): String? {
+        return supabaseClient.auth.currentUserOrNull()?.id
     }
 
 }
