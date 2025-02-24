@@ -19,10 +19,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.appdev.smartkisan.ViewModel.LoginViewModel
+import com.appdev.smartkisan.ViewModel.StoreViewModel
 import com.appdev.smartkisan.ui.MainAppScreens.BottomBarTab
 import com.appdev.smartkisan.ui.MainAppScreens.GlassmorphicBottomNavigation
 import com.appdev.smartkisan.ui.navigation.Routes
@@ -37,7 +40,9 @@ fun SellerBaseScreen() {
 
     val currentRoute = controller.currentBackStackEntryAsState().value?.destination?.route
     val hideBottomBarRoutes = listOf(
-        Routes.ChatInDetailScreen.route, Routes.StoreManagementScreen.route , Routes.AddProductScreen.route
+        Routes.ChatInDetailScreen.route,
+        Routes.StoreManagementScreen.route,
+        Routes.AddProductScreen.route
     )
 
     Scaffold(bottomBar = {
@@ -65,7 +70,7 @@ fun SellerBaseScreen() {
                 when (selectedTab.title) {
                     "Home" -> controller.navigate(Routes.SellerHomeScreen.route)
                     "Inbox" -> controller.navigate(Routes.SellerInboxScreen.route)
-                    "Account" -> controller.navigate(Routes.AccountScreen.route)
+                    "Account" -> controller.navigate(Routes.SellerAccountScreen.route)
                 }
             }
         }
@@ -75,9 +80,12 @@ fun SellerBaseScreen() {
             Modifier.padding(innerPadding)
         ) {
             composable(Routes.SellerHomeScreen.route) { SellerHomeScreen(controller) }
+            composable(Routes.SellerAccountScreen.route) { SellerProfileScreen() }
             composable(Routes.ChatInDetailScreen.route) { InDetailChatScreen(controller) }
             composable(Routes.StoreManagementScreen.route) { StoreManagementScreen(controller) }
-            composable(Routes.AddProductScreen.route) { AddProductScreen(controller) }
+            composable(Routes.AddProductScreen.route) {
+                AddProductRoot(controller)
+            }
             composable(Routes.SellerInboxScreen.route) {
                 SellerChatScreen(controller) { state ->
                     isSearchFocused = state

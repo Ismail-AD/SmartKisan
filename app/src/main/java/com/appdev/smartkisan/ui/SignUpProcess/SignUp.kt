@@ -1,26 +1,28 @@
 package com.appdev.smartkisan.ui.SignUpProcess
 
+import android.app.Activity
 import android.net.Uri
-import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.Card
-import androidx.compose.material3.CardColors
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -44,40 +46,49 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
-import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.navigation.NavHostController
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
-import coil3.request.crossfade
-import com.appdev.smartkisan.Actions.PhoneAuthAction
+import com.appdev.smartkisan.Actions.UserAuthAction
 import com.appdev.smartkisan.R
 import com.appdev.smartkisan.States.UserAuthState
 import com.appdev.smartkisan.Utils.SessionManagement
 import com.appdev.smartkisan.ViewModel.LoginViewModel
 import com.appdev.smartkisan.ui.OtherComponents.CustomButton
 import com.talhafaki.composablesweettoast.util.SweetToastUtil.SweetError
-import java.net.URI
+import kotlinx.coroutines.delay
 
+@OptIn(ExperimentalMaterial3Api::class)
 
 @Composable
-fun UserInfoInputRoot(
+fun SignUpRoot(
     navigateToNext: () -> Unit,
     loginViewModel: LoginViewModel,
+    navigateToLogin: () -> Unit,
     navigateUp: () -> Unit
 ) {
-    UserInfo(loginViewModel.loginState, onAction = { action ->
+    SignUp(loginViewModel.loginState, onAction = { action ->
         when (action) {
-            is PhoneAuthAction.NextScreen -> {
+            is UserAuthAction.NextScreen -> {
                 navigateToNext()
             }
 
-            is PhoneAuthAction.GoBack -> {
+            is UserAuthAction.GoBack -> {
                 navigateUp()
+            }
+
+            is UserAuthAction.LoginScreen -> {
+                navigateToLogin()
             }
 
             else -> loginViewModel.onAction(action)
@@ -86,39 +97,36 @@ fun UserInfoInputRoot(
 }
 
 @Composable
-fun UserInfo(loginState: UserAuthState, onAction: (PhoneAuthAction) -> Unit) {
+fun SignUp(loginState: UserAuthState, onAction: (UserAuthAction) -> Unit) {
 
     val context = LocalContext.current
 
 
     var showToastState by remember { mutableStateOf(Pair(false, "")) }
 
-    LaunchedEffect(key1 = loginState.dataSaved) {
-        if (loginState.dataSaved) {
-            SessionManagement.setOnboardingCompleted(context, true)
-            SessionManagement.saveUserType(
-                context,
-                userType = loginState.userType
-            )
-            SessionManagement.saveUserId(
-                context,
-                userId = loginState.userId,
-            )
-            SessionManagement.saveAccessToken(
-                context,
-                accessToken = loginState.accessToken
-            )
-            onAction(PhoneAuthAction.NextScreen)
+    LaunchedEffect(key1 = loginState.otpRequestAccepted) {
+        if (loginState.otpRequestAccepted) {
+            onAction(UserAuthAction.NextScreen)
+        }
+    }
+    LaunchedEffect(loginState.validationError) {
+        loginState.validationError?.let { error ->
+            showToastState = Pair(true, error)
+        }
+    }
+    LaunchedEffect(loginState.errorMessage) {
+        loginState.errorMessage?.let { error ->
+            showToastState = Pair(true, error)
         }
     }
     val launcher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
         if (uri != null) {
-            onAction.invoke(PhoneAuthAction.SelectedImageUri(uri))
-//            selectedImageUri = uri
+            onAction.invoke(UserAuthAction.SelectedImageUri(uri))
         }
     }
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -143,27 +151,28 @@ fun UserInfo(loginState: UserAuthState, onAction: (PhoneAuthAction) -> Unit) {
             verticalArrangement = Arrangement.SpaceEvenly,
             modifier = Modifier
                 .padding(horizontal = 18.dp)
-                .fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally
+                .fillMaxSize(),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Image(painter = painterResource(id = R.drawable.tempicon), contentDescription = "")
+//            Image(painter = painterResource(id = R.drawable.tempicon), contentDescription = "")
 
             Column(
-                modifier = Modifier
-                    .fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
-                    text = "Set Up Your Profile",
+                    text = "Create Account",
                     fontWeight = FontWeight.ExtraBold,
                     fontSize = 23.sp,
                     color = MaterialTheme.colorScheme.onBackground
                 )
                 Text(
-                    text = "You are almost done!",
+                    text = "Please fill in the details to create your account",
                     fontSize = 16.sp,
                     textAlign = TextAlign.Center,
                     color = MaterialTheme.colorScheme.onBackground
                 )
+
                 Box(modifier = Modifier.padding(top = 15.dp)) {
                     Box(
                         modifier = Modifier
@@ -215,7 +224,7 @@ fun UserInfo(loginState: UserAuthState, onAction: (PhoneAuthAction) -> Unit) {
                 TextField(
                     value = loginState.userName,
                     onValueChange = { input ->
-                        onAction.invoke(PhoneAuthAction.Username(username = input))
+                        onAction.invoke(UserAuthAction.Username(username = input))
                     },
                     colors = TextFieldDefaults.colors(
                         focusedIndicatorColor = Color.Transparent,
@@ -229,51 +238,130 @@ fun UserInfo(loginState: UserAuthState, onAction: (PhoneAuthAction) -> Unit) {
                         )
                     }, modifier = Modifier
                         .fillMaxWidth()
-                        .padding(top = 15.dp), singleLine = true
+                        .padding(top = 5.dp), singleLine = true
                 )
+
+                // Email Field
+                TextField(
+                    value = loginState.email,
+                    onValueChange = { onAction(UserAuthAction.EmailChange(it)) },
+                    colors = TextFieldDefaults.colors(
+                        focusedIndicatorColor = Color.Transparent,
+                        unfocusedIndicatorColor = Color.Transparent,
+                        focusedContainerColor = Color(0xFFE4E7EE),
+                        unfocusedContainerColor = Color(0xFFE4E7EE)
+                    ),
+                    placeholder = { Text("Enter email address") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true
+                )
+
+                // Password Field
+                TextField(
+                    value = loginState.password,
+                    onValueChange = { onAction(UserAuthAction.PasswordChange(it)) },
+                    colors = TextFieldDefaults.colors(
+                        focusedIndicatorColor = Color.Transparent,
+                        unfocusedIndicatorColor = Color.Transparent,
+                        focusedContainerColor = Color(0xFFE4E7EE),
+                        unfocusedContainerColor = Color(0xFFE4E7EE)
+                    ),
+                    placeholder = { Text("Enter password") },
+                    visualTransformation = if (loginState.passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                    trailingIcon = {
+                        IconButton(onClick = { onAction(UserAuthAction.UpdatePasswordVisible(!loginState.passwordVisible)) }) {
+                            Image(
+                                painter = painterResource(
+                                    id = if (loginState.passwordVisible)
+                                        R.drawable.show
+                                    else
+                                        R.drawable.hide
+                                ), modifier = Modifier.size(27.dp),
+                                contentDescription = if (loginState.passwordVisible) "Hide password" else "Show password"
+                            )
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true
+                )
+
+                // Confirm Password Field
+                TextField(
+                    value = loginState.confirmPassword,
+                    onValueChange = { onAction(UserAuthAction.ConfirmPasswordChange(it)) },
+                    colors = TextFieldDefaults.colors(
+                        focusedIndicatorColor = Color.Transparent,
+                        unfocusedIndicatorColor = Color.Transparent,
+                        focusedContainerColor = Color(0xFFE4E7EE),
+                        unfocusedContainerColor = Color(0xFFE4E7EE)
+                    ),
+                    placeholder = { Text("Confirm password") },
+                    visualTransformation = if (loginState.confirmPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                    trailingIcon = {
+                        IconButton(onClick = { onAction(UserAuthAction.UpdateConfirmPasswordVisible(!loginState.confirmPasswordVisible)) }) {
+                            Image(
+                                painter = painterResource(
+                                    id = if (loginState.confirmPasswordVisible)
+                                        R.drawable.show
+                                    else
+                                        R.drawable.hide
+                                ), modifier = Modifier.size(27.dp),
+                                contentDescription = if (loginState.confirmPasswordVisible) "Hide cpassword" else "Show cpassword"
+                            )
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true
+                )
+
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Text(
+                        text = "Already have an account?",
+                        color = MaterialTheme.colorScheme.onBackground
+                    )
+
+                    Text(
+                        text = "Login",
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.clickable { onAction(UserAuthAction.LoginScreen) }
+                    )
+                }
             }
 
             CustomButton(
                 onClick = {
-                    if (loginState.userName.trim().isNotEmpty()) {
-                        val imageBytes = loginState.profileImage?.let { uri ->
-                            try {
-                                context.contentResolver.openInputStream(uri)?.use {
-                                    it.readBytes()
-                                }
-                            } catch (e: Exception) {
-                                showToastState = Pair(true, "Failed to process image!")
-                                null
-                            }
-                        }
-                        if (imageBytes != null) {
-                            Log.d("CJK", "${imageBytes.size}")
-                        }
-                        onAction.invoke(
-                            PhoneAuthAction.SaveUserProfile(
-                                imageByteArray = imageBytes,
-                                loginState.profileImage
-                            )
+                    onAction(
+                        UserAuthAction.SendMeOtp(
+                            loginState.email,
+                            loginState.password
                         )
-                    } else {
-                        showToastState = Pair(true, "Username should not be empty!")
-                    }
+                    )
                 },
-                text = "Continue", // Changed button text to be more context-specific
+                text = "Sign Up",
                 width = 1f
             )
         }
-
-
         if (showToastState.first) {
-            SweetError(
-                message = showToastState.second,
-                duration = Toast.LENGTH_SHORT,
-                padding = PaddingValues(top = 16.dp),
-                contentAlignment = Alignment.TopCenter
-            )
+            Toast.makeText(context,showToastState.second,Toast.LENGTH_SHORT).show()
+//            SweetError(
+//                message = showToastState.second,
+//                duration = Toast.LENGTH_SHORT,
+//                padding = PaddingValues(top = 16.dp),
+//                contentAlignment = Alignment.TopCenter
+//            )
             showToastState = Pair(false, "")
 
         }
     }
+
 }
+
+
+
+

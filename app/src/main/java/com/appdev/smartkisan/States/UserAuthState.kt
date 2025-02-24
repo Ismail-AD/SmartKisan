@@ -1,11 +1,17 @@
 package com.appdev.smartkisan.States
 
 import android.net.Uri
+import io.github.jan.supabase.auth.user.UserSession
 
 data class UserAuthState(
-    val phoneNumber: String = "",
+    val email: String = "",
+    val password: String = "",
+    val confirmPassword: String = "",
+    val confirmPasswordVisible:Boolean = false,
+    val passwordVisible:Boolean = false,
     val countryCode: String = "+92",
     val isOtpValid: Boolean = false,
+    val loginSuccess:Boolean = false,
     val otp: String = "",
     val errorMessage: String? = null,
     val isLoading: Boolean = false,
@@ -16,5 +22,7 @@ data class UserAuthState(
     val profileImage: Uri? = null,
     val dataSaved: Boolean = false,
     var userId: String = "",
-    var accessToken: String = ""
+    val userSession: UserSession? = null,
+    var accessToken: String = "",
+    val validationError: String? = null
 )

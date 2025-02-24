@@ -51,76 +51,100 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
+import com.appdev.smartkisan.Actions.SellerStoreActions
+import com.appdev.smartkisan.Actions.UserAuthAction
 import com.appdev.smartkisan.R
+import com.appdev.smartkisan.States.UserAuthState
+import com.appdev.smartkisan.ViewModel.LoginViewModel
 import com.appdev.smartkisan.data.Category
 import com.appdev.smartkisan.data.Product
 import com.appdev.smartkisan.ui.OtherComponents.ExpandedItem
 import com.appdev.smartkisan.ui.OtherComponents.SingleCrop
 import com.appdev.smartkisan.ui.OtherComponents.SearchField
+import com.appdev.smartkisan.ui.SignUpProcess.Login
 import com.appdev.smartkisan.ui.navigation.Routes
 import com.appdev.smartkisan.ui.theme.myGreen
 
+
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun StoreManagementScreen(controller: NavHostController) {
+fun StoreManagementScreen(navController: NavHostController) {
 
     var expanded by remember { mutableStateOf(false) }
     val items = listOf("All", "Seeds", "Fertilizers", "Medicine")
     var selectedOption by remember { mutableStateOf("All") }
     val productList = listOf(
         Product(
-            5,
-            "Herbal Medicine for Plants",
-            400,
-            350,
-            R.drawable.seeds,
-            4.7f,
-            85,
+            id = 5L,
+            creatorId = "",
+            name = "Herbal Medicine for Plants",
+            price = 400.0,
+            discountPrice = 350.0,
+            imageUrls = listOf(),  // You may need an actual list of image URLs
+            ratings = 4.7f,
+            reviewsCount = 85L,
             description = "This herbal plant medicine is specially formulated to enhance growth and protect your plants from common diseases. Made from natural ingredients, it boosts plant immunity and encourages healthy development without harsh chemicals. Ideal for organic farming and safe for all types of crops and garden plants.",
-            10.0f, "g"
+            quantity = 100L,  // Added a default quantity
+            weightOrVolume = 10.0f,
+            unit = "g"
         ),
         Product(
-            5,
-            "Herbal Medicine for Plants",
-            400,
-            350,
-            R.drawable.seeds,
-            4.7f,
-            85,
+            id = 6L,
+            creatorId = "",
+            name = "Herbal Medicine for Plants",
+            price = 400.0,
+            discountPrice = 350.0,
+            imageUrls = listOf(),
+            ratings = 4.7f,
+            reviewsCount = 85L,
             description = "This herbal plant medicine is specially formulated to enhance growth and protect your plants from common diseases. Made from natural ingredients, it boosts plant immunity and encourages healthy development without harsh chemicals. Ideal for organic farming and safe for all types of crops and garden plants.",
-            10.0f, "g"
+            quantity = 100L,
+            weightOrVolume = 10.0f,
+            unit = "g"
         ),
         Product(
-            5,
-            "Herbal Medicine for Plants",
-            400,
-            350,
-            R.drawable.seeds,
-            4.7f,
-            85,
+            id = 7L,
+            creatorId = "",
+            name = "Herbal Medicine for Plants",
+            price = 400.0,
+            discountPrice = 350.0,
+            imageUrls = listOf(),
+            ratings = 4.7f,
+            reviewsCount = 85L,
             description = "This herbal plant medicine is specially formulated to enhance growth and protect your plants from common diseases. Made from natural ingredients, it boosts plant immunity and encourages healthy development without harsh chemicals. Ideal for organic farming and safe for all types of crops and garden plants.",
-            10.0f, "g"
-        ),Product(
-                5,
-        "Herbal Medicine for Plants",
-        400,
-        350,
-        R.drawable.seeds,
-        4.7f,
-        85,
-        description = "This herbal plant medicine is specially formulated to enhance growth and protect your plants from common diseases. Made from natural ingredients, it boosts plant immunity and encourages healthy development without harsh chemicals. Ideal for organic farming and safe for all types of crops and garden plants.",
-        10.0f, "g"
-    ),Product(
-            5,
-            "Herbal Medicine for Plants",
-            400,
-            350,
-            R.drawable.seeds,
-            4.7f,
-            85,
-            description = "This herbal plant medicine is specially formulated to enhance growth and protect your plants from common diseases. Made from natural ingredients, it boosts plant immunity and encourages healthy development without harsh chemicals. Ideal for organic farming and safe for all types of crops and garden plants.",
-            10.0f, "g"
+            quantity = 100L,
+            weightOrVolume = 10.0f,
+            unit = "g"
         ),
+        Product(
+            id = 8L,
+            creatorId = "",
+            name = "Herbal Medicine for Plants",
+            price = 400.0,
+            discountPrice = 350.0,
+            imageUrls = listOf(),
+            ratings = 4.7f,
+            reviewsCount = 85L,
+            description = "This herbal plant medicine is specially formulated to enhance growth and protect your plants from common diseases. Made from natural ingredients, it boosts plant immunity and encourages healthy development without harsh chemicals. Ideal for organic farming and safe for all types of crops and garden plants.",
+            quantity = 100L,
+            weightOrVolume = 10.0f,
+            unit = "g"
+        ),
+        Product(
+            id = 9L,
+            creatorId = "",
+            name = "Herbal Medicine for Plants",
+            price = 400.0,
+            discountPrice = 350.0,
+            imageUrls = listOf(),
+            ratings = 4.7f,
+            reviewsCount = 85L,
+            description = "This herbal plant medicine is specially formulated to enhance growth and protect your plants from common diseases. Made from natural ingredients, it boosts plant immunity and encourages healthy development without harsh chemicals. Ideal for organic farming and safe for all types of crops and garden plants.",
+            quantity = 100L,
+            weightOrVolume = 10.0f,
+            unit = "g"
+        )
     )
     var selected by remember {
         mutableIntStateOf(0)
@@ -153,7 +177,7 @@ fun StoreManagementScreen(controller: NavHostController) {
         })
     }, floatingActionButton = {
         FloatingActionButton(
-            onClick = { controller.navigate(Routes.AddProductScreen.route) },
+            onClick = { navController.navigate(Routes.AddProductScreen.route) },
             containerColor = myGreen,
             contentColor = Color.White
         ) {

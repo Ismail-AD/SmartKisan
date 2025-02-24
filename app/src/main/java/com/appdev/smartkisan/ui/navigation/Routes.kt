@@ -3,7 +3,8 @@ package com.appdev.smartkisan.ui.navigation
 sealed class Routes(val route: String) {
     object OnBoarding : Routes("OnBoarding_Screen")
     object RoleSelect : Routes("RoleSelect_Screen")
-    object NumberInput : Routes("NumberInput_Screen")
+    object SignUp : Routes("SignUp_Screen")
+    object Login : Routes("Login_Screen")
     object OtpInput : Routes("OtpInput_Screen")
     object HomeScreen : Routes("Home_Screen")
     object AccountScreen : Routes("Account_Screen")

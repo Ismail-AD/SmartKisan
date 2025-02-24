@@ -1,9 +1,13 @@
 package com.appdev.smartkisan.ui.SellerAppScreens
 
 import android.net.Uri
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -57,30 +61,42 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
-import androidx.navigation.compose.rememberNavController
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
+import com.appdev.smartkisan.Actions.SellerStoreActions
+import com.appdev.smartkisan.Actions.UserAuthAction
 import com.appdev.smartkisan.R
-import com.appdev.smartkisan.data.Category
-import com.appdev.smartkisan.data.Product
+import com.appdev.smartkisan.States.ProductState
+import com.appdev.smartkisan.ViewModel.StoreViewModel
 import com.appdev.smartkisan.ui.OtherComponents.CustomButton
-import com.appdev.smartkisan.ui.theme.SmartKisanTheme
 import com.appdev.smartkisan.ui.theme.myGreen
+
+
+@Composable
+fun AddProductRoot(
+    navHostController: NavHostController,
+    storeViewModel: StoreViewModel = hiltViewModel()
+) {
+    AddProductScreen(storeViewModel.productState, onAction = { action ->
+        when (action) {
+            is SellerStoreActions.GoBack -> {
+                navHostController.navigateUp()
+            }
+
+            else -> storeViewModel.onAction(action)
+        }
+    })
+}
 
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AddProductScreen(controller: NavHostController) {
-    val measurements = listOf("Kg", "g", "ml", "L")
-    var expanded by remember { mutableStateOf(false) }
-    var selectedOption by remember { mutableStateOf("Kg") }
-    var name by remember { mutableStateOf("") }
-    var desc by remember { mutableStateOf("") }
-    var priceInput by remember { mutableStateOf("") }
-    var price by remember { mutableFloatStateOf(0.0f) }
-    var weight by remember { mutableStateOf("") }
-    var selectedMeasurement by remember { mutableStateOf(measurements.first()) }
+fun AddProductScreen(productState: ProductState, onAction: (SellerStoreActions) -> Unit) {
+    val context = LocalContext.current
+    var showToastState by remember { mutableStateOf(Pair(false, "")) }
+
     Scaffold(topBar = {
         TopAppBar(title = {
             Text(
@@ -108,7 +124,7 @@ fun AddProductScreen(controller: NavHostController) {
                 .background(MaterialTheme.colorScheme.background)
                 .padding(innerPadding)
         ) {
-            
+
             Column(
                 modifier = Modifier
                     .imePadding()
@@ -119,18 +135,43 @@ fun AddProductScreen(controller: NavHostController) {
             ) {
                 TitledOutlinedTextField(
                     title = "Product Name",
-                    value = name,
-                    onValueChange = { name = it },
+                    value = productState.productName,
+                    onValueChange = {
+                        onAction.invoke(
+                            SellerStoreActions.ProductNameUpdated(
+                                productName = it
+                            )
+                        )
+                    },
                     placeholder = "Enter the name of your product", singleLine = true
                 )
 
                 TitledOutlinedTextField(
                     title = "Product Price",
-                    value = priceInput.toString(),
+                    value = productState.price.toString(),
                     onValueChange = {
                         if (it.all { char -> char.isDigit() || char == '.' }) {
-                            priceInput = it
-                            price = it.toFloatOrNull() ?: 0f
+                            onAction.invoke(
+                                SellerStoreActions.PriceUpdated(
+                                    price = it.toDouble()
+                                )
+                            )
+                        }
+                    },
+                    placeholder = "Enter your product price",
+                    singleLine = true, isNumber = true
+                )
+
+                TitledOutlinedTextField(
+                    title = "Quantity",
+                    value = productState.quantity.toString(),
+                    onValueChange = {
+                        if (it.all { char -> char.isDigit() }) {
+                            onAction.invoke(
+                                SellerStoreActions.QuantityUpdated(
+                                    quantity = it.toLong()
+                                )
+                            )
                         }
                     },
                     placeholder = "Enter your product price",
@@ -139,8 +180,14 @@ fun AddProductScreen(controller: NavHostController) {
 
                 TitledOutlinedTextField(
                     title = "Product Description",
-                    value = desc,
-                    onValueChange = { desc = it },
+                    value = productState.description,
+                    onValueChange = {
+                        onAction.invoke(
+                            SellerStoreActions.DescriptionUpdated(
+                                description = it
+                            )
+                        )
+                    },
                     placeholder = "Describe your product here",
                     height = 150
                 )
@@ -148,17 +195,26 @@ fun AddProductScreen(controller: NavHostController) {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     TitledOutlinedTextField(
                         title = "Weight or Volume",
-                        value = weight,
-                        onValueChange = { weight = it.filter { char -> char.isDigit() } },
+                        value = productState.weight.toString(),
+                        onValueChange = { input ->
+                            onAction.invoke(SellerStoreActions.WeightUpdated(input.filter { it.isDigit() }
+                                .toFloat()))
+                        },
                         placeholder = "e.g., 250",
                         modifier = Modifier.weight(1f), singleLine = true, isNumber = true
                     )
 
                     MeasurementDropdown(
                         title = "Measurement Type",
-                        measurements = measurements,
-                        selectedOption = selectedMeasurement,
-                        onOptionSelected = { selectedMeasurement = it },
+                        measurements = productState.measurements,
+                        selectedOption = productState.measurement,
+                        onOptionSelected = {
+                            onAction.invoke(
+                                SellerStoreActions.MeasurementUpdated(
+                                    measurement = it
+                                )
+                            )
+                        },
                         modifier = Modifier.weight(1f)
                     )
                 }
@@ -169,33 +225,89 @@ fun AddProductScreen(controller: NavHostController) {
                     fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.onBackground
                 )
-                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    ImageSelection(null)
-                    ImageSelection(null)
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState())
+                        .padding(vertical = 8.dp)
+                ) {
+                    // Display existing image selectors
+                    productState.imageUris.forEachIndexed { index, uri ->
+                        ImageSelector(
+                            uri = uri,
+                            index = index,
+                            onImageSelect = { selectedUri, idx ->
+                                onAction(SellerStoreActions.SelectedImageUri(selectedUri, idx))
+                            }
+                        )
+                    }
+
+                    // Always show one empty selector at the end when there's room for more images
+                    // (assuming a reasonable max of 5 images)
+                    if (productState.imageUris.size < 5) {
+                        ImageSelector(
+                            uri = null,
+                            index = productState.imageUris.size,
+                            onImageSelect = { selectedUri, idx ->
+                                onAction(SellerStoreActions.SelectedImageUri(selectedUri, idx))
+                            }
+                        )
+                    }
                 }
                 CustomButton(
-                    onClick = {  },
-                    text = "Save Product", width = 1f, modifier = Modifier.padding(top = 10.dp, bottom = 20.dp)
+                    onClick = {
+                        val imageBytesList: List<ByteArray?> = productState.imageUris.mapNotNull { uri ->
+                            try {
+                                context.contentResolver.openInputStream(uri)?.use {
+                                    it.readBytes()
+                                }
+                            } catch (e: Exception) {
+                                showToastState = Pair(true, "Failed to process image!")
+                                null
+                            }
+                        }
+                        onAction.invoke(SellerStoreActions.AddToStore(listOfImageByteArrays = imageBytesList))
+                    },
+                    text = "Save Product",
+                    width = 1f,
+                    modifier = Modifier.padding(top = 10.dp, bottom = 20.dp)
                 )
+            }
+            if (showToastState.first) {
+                Toast.makeText(context,showToastState.second, Toast.LENGTH_SHORT).show()
+                showToastState = Pair(false, "")
             }
         }
     }
 }
 
+
+
 @Composable
-fun ImageSelection(uri: Uri?) {
+fun ImageSelector(uri: Uri?, index: Int, onImageSelect: (Uri, Int) -> Unit) {
+    val context = LocalContext.current
+
+    val launcher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { selectedUri: Uri? ->
+        if (selectedUri != null) {
+            onImageSelect(selectedUri, index)
+        }
+    }
+
     Card(
-        onClick = {},
+        onClick = { launcher.launch("image/*") },
         modifier = Modifier.size(110.dp),
         border = BorderStroke(1.dp, Color.LightGray),
         colors = CardDefaults.cardColors(containerColor = Color.Transparent)
     ) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             AsyncImage(
-                model = ImageRequest.Builder(LocalContext.current)
+                model = ImageRequest.Builder(context)
                     .data(uri)
                     .build(),
-                contentDescription = "product Image",
+                contentDescription = "Product Image",
                 placeholder = painterResource(R.drawable.placeimage),
                 error = painterResource(R.drawable.placeimage),
                 modifier = Modifier
@@ -205,7 +317,6 @@ fun ImageSelection(uri: Uri?) {
             )
         }
     }
-
 }
 
 

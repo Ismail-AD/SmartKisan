@@ -29,7 +29,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.appdev.smartkisan.Actions.PhoneAuthAction
+import com.appdev.smartkisan.Actions.UserAuthAction
 import com.appdev.smartkisan.R
 import com.appdev.smartkisan.States.UserAuthState
 import com.appdev.smartkisan.ViewModel.LoginViewModel
@@ -45,11 +45,11 @@ fun UserTypeRoot(
 ) {
     UserSelection(loginViewModel.loginState) { action ->
         when (action) {
-            is PhoneAuthAction.NextScreen -> {
+            is UserAuthAction.NextScreen -> {
                 navigateToNext()
             }
 
-            is PhoneAuthAction.GoBack -> {
+            is UserAuthAction.GoBack -> {
                 navigateUp()
             }
 
@@ -60,7 +60,7 @@ fun UserTypeRoot(
 }
 
 @Composable
-fun UserSelection(loginState: UserAuthState, onAction: (PhoneAuthAction) -> Unit) {
+fun UserSelection(loginState: UserAuthState, onAction: (UserAuthAction) -> Unit) {
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -79,7 +79,7 @@ fun UserSelection(loginState: UserAuthState, onAction: (PhoneAuthAction) -> Unit
                 image = R.drawable.farmerrole,
                 isSelected = loginState.userType == "Farmer"
             ) {
-                onAction.invoke(PhoneAuthAction.UpdatedUserType(type = "Farmer"))
+                onAction.invoke(UserAuthAction.UpdatedUserType(type = "Farmer"))
             }
             selectionCard(
                 title = "Seller",
@@ -87,11 +87,11 @@ fun UserSelection(loginState: UserAuthState, onAction: (PhoneAuthAction) -> Unit
                 image = R.drawable.sellerroleplay,
                 isSelected = loginState.userType == "Seller"
             ) {
-                onAction.invoke(PhoneAuthAction.UpdatedUserType(type = "Seller"))
+                onAction.invoke(UserAuthAction.UpdatedUserType(type = "Seller"))
             }
             Spacer(modifier = Modifier.height(13.dp))
             CustomButton(
-                onClick = { onAction.invoke(PhoneAuthAction.NextScreen) },
+                onClick = { onAction.invoke(UserAuthAction.NextScreen) },
                 text = "Next", width = 1f
             )
         }

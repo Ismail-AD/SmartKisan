@@ -96,8 +96,8 @@ dependencies {
     implementation("com.github.tfaki:ComposableSweetToast:1.0.1")
 
     // hilt
-    kapt("com.google.dagger:hilt-android-compiler:2.46")
-    implementation("com.google.dagger:hilt-android:2.46")
+    kapt("com.google.dagger:hilt-android-compiler:2.55")
+    implementation("com.google.dagger:hilt-android:2.55")
     implementation("androidx.hilt:hilt-navigation-compose:1.2.0")
 
     implementation(platform("io.github.jan-tennert.supabase:bom:3.0.3"))

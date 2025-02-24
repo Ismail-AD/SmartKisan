@@ -13,9 +13,9 @@ import androidx.navigation.compose.rememberNavController
 import com.appdev.smartkisan.ViewModel.LoginViewModel
 import com.appdev.smartkisan.ui.MainAppScreens.BaseScreen
 import com.appdev.smartkisan.ui.SellerAppScreens.SellerBaseScreen
-import com.appdev.smartkisan.ui.SignUpProcess.NumberInputRoot
+import com.appdev.smartkisan.ui.SignUpProcess.LoginRoot
 import com.appdev.smartkisan.ui.SignUpProcess.OtpInputRoot
-import com.appdev.smartkisan.ui.SignUpProcess.UserInfoInputRoot
+import com.appdev.smartkisan.ui.SignUpProcess.SignUpRoot
 import com.appdev.smartkisan.ui.SignUpProcess.UserTypeRoot
 import com.appdev.smartkisan.ui.onBoarding.BoardingTemplate
 
@@ -24,20 +24,12 @@ fun NavGraph(
     notInitialLaunch: Boolean,
     userType: String?,
     userId: String?,
-    userAccessToken: String?,
-    saveNewToken: (String) -> Unit
+    isSessionValid: Boolean
 ) {
     val controller = rememberNavController()
     val loginViewModel: LoginViewModel = hiltViewModel()
 
-    val initialRoute = if (userId != null && userType != null) {
-        userAccessToken?.let { token ->
-            loginViewModel.refreshToken(token) { newtoken ->
-                newtoken?.let { newToken ->
-                    saveNewToken(newToken)
-                }
-            }
-        }
+    val initialRoute = if (userId != null && userType != null && isSessionValid) {
         when (userType) {
             "Farmer" -> Routes.Main.route
             "Seller" -> Routes.SellerMain.route
@@ -71,30 +63,44 @@ fun NavGraph(
             }
             composable(route = Routes.RoleSelect.route) {
                 UserTypeRoot(navigateToNext = {
-                    controller.navigate(Routes.NumberInput.route)
+                    controller.navigate(Routes.SignUp.route)
                 }, loginViewModel = loginViewModel) {
                     controller.navigateUp()
                 }
             }
-            composable(route = Routes.NumberInput.route) {
+            composable(route = Routes.Login.route) {
+                LoginRoot(loginViewModel = loginViewModel, navigateToNext = {
+                    when (loginViewModel.loginState.userType) {
+                        "Farmer" -> {
+                            controller.navigate(Routes.Main.route)
+                        }
 
-                NumberInputRoot(navigateToNext = {
+                        "Seller" -> {
+                            controller.navigate(Routes.SellerMain.route)
+                        }
+                    }
+                }, navigateToSignUp = {
+                    controller.navigate(Routes.SignUp.route)
+                }, navigateUp = {
+                    controller.navigateUp()
+                }) {
+
+                }
+            }
+
+
+            composable(route = Routes.SignUp.route) {
+                SignUpRoot(navigateToNext = {
                     controller.navigate(Routes.OtpInput.route)
+                }, navigateToLogin = {
+                    controller.navigate(Routes.Login.route)
                 }, loginViewModel = loginViewModel) {
                     controller.navigateUp()
                 }
             }
-            composable(
-                route = Routes.OtpInput.route
-            ) {
+
+            composable(route = Routes.OtpInput.route) {
                 OtpInputRoot(navigateToNext = {
-                    controller.navigate(Routes.UserInfo.route)
-                }, loginViewModel = loginViewModel) {
-                    controller.navigateUp()
-                }
-            }
-            composable(route = Routes.UserInfo.route) {
-                UserInfoInputRoot(navigateToNext = {
                     when (loginViewModel.loginState.userType) {
                         "Farmer" -> {
                             controller.navigate(Routes.Main.route)
@@ -120,7 +126,7 @@ fun NavGraph(
 
 fun getLaunchRoute(notInitialLaunch: Boolean): String {
     return if (notInitialLaunch) {
-        Routes.NumberInput.route
+        Routes.Login.route
     } else {
         Routes.OnBoarding.route
     }

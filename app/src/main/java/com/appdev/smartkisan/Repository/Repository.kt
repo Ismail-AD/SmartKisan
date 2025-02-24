@@ -4,11 +4,13 @@ import android.net.Uri
 import android.util.Log
 import com.appdev.smartkisan.Room.Dao.UserInfoDao
 import com.appdev.smartkisan.Utils.ResultState
+import com.appdev.smartkisan.data.Product
 import com.appdev.smartkisan.data.UserEntity
 import com.google.firebase.auth.FirebaseAuth
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.OtpType
 import io.github.jan.supabase.auth.auth
+import io.github.jan.supabase.auth.providers.builtin.Email
 import io.github.jan.supabase.auth.providers.builtin.Phone
 import io.github.jan.supabase.auth.user.UserSession
 import io.github.jan.supabase.postgrest.from
@@ -28,11 +30,48 @@ class Repository @Inject constructor(
     private val profileImageBucketId = "profileImages"
     private val profileImageFolderPath = "public/1cp17k1_1"
 
+    private val productImageBucketId = "productImages"
+    private val productImageFolderPath = "public/cel5c7_0"
+
+    fun addProduct(
+        product: Product,
+        imageByteArrays: List<ByteArray?>,
+        imageUris: List<Uri?>
+    ): Flow<ResultState<String>> =
+        flow {
+            getCurrentUserId()?.let { uid ->
+                emit(ResultState.Loading)
+                try {
+                    val imageUrls = mutableListOf<String>()
+
+                    for (i in imageByteArrays.indices) {
+                        val byteArray = imageByteArrays[i]
+                        val uri = imageUris.getOrNull(i)
+                        if (byteArray != null && uri != null) {
+                            val imageUrl = imageUploading(
+                                uri,
+                                byteArray,
+                                productImageFolderPath,
+                                productImageBucketId
+                            )
+                            imageUrls.add(imageUrl)
+                        }
+                    }
+
+                    val productWithImages = product.copy(imageUrls = imageUrls, creatorId = uid)
+                    supabaseClient.from("products").insert(productWithImages)
+                    emit(ResultState.Success("Product added successfully"))
+                } catch (e: Exception) {
+                    Log.e("SupabaseRepository", "Product addition failed: ${e.message}", e)
+                    emit(ResultState.Failure(e))
+                }
+            }
+        }
 
     suspend fun refreshUserInfo(accessToken: String?, saveNewToken: () -> Unit) {
         withContext(Dispatchers.IO) {
             if (accessToken != null) {
-                supabaseClient.auth.retrieveUser(accessToken)
+//                supabaseClient.auth.retrieveUser(accessToken)
                 supabaseClient.auth.refreshCurrentSession()
                 saveNewToken()
             }
@@ -56,39 +95,69 @@ class Repository @Inject constructor(
         }
     }
 
-    fun signUpUserWithSupaBase(phoneNumber: String): Flow<ResultState<String>> =
+    fun loginUser(myEmail: String, _mpassword: String): Flow<ResultState<UserSession?>> =
         flow {
             emit(ResultState.Loading)
             try {
-                val result = supabaseClient.auth.signUpWith(Phone) {
-                    phone = phoneNumber
-                    password = "default"
+                supabaseClient.auth.signInWith(Email) {
+                    email = myEmail
+                    password = _mpassword
+                }
+                emit(ResultState.Success(supabaseClient.auth.currentSessionOrNull()))
+            } catch (e: Exception) {
+                emit(ResultState.Failure(e))
+            }
+        }
+
+    fun signUpUserWithEmail(email: String, password: String): Flow<ResultState<String>> =
+        flow {
+            emit(ResultState.Loading)
+            try {
+                val result = supabaseClient.auth.signUpWith(Email) {
+                    this.email = email
+                    this.password = password
                 }
                 if (result != null) {
-                    emit(ResultState.Success("Sign-up successful"))
+                    emit(ResultState.Success("Otp has been sent on e-mail"))
                 }
             } catch (e: Exception) {
                 emit(ResultState.Failure(e))
             }
         }
 
-    fun verifyOtp(phoneNumber: String, otp: String): Flow<ResultState<String>> =
+    fun verifyEmailAndSignIn(email: String, otp: String): Flow<ResultState<UserSession?>> =
         flow {
             emit(ResultState.Loading)
-
             try {
-                supabaseClient.auth.verifyPhoneOtp(
-                    type = OtpType.Phone.SMS,
-                    phone = phoneNumber,
+                supabaseClient.auth.verifyEmailOtp(
+                    type = OtpType.Email.EMAIL,
+                    email = email,
                     token = otp
                 )
-                emit(ResultState.Success("OTP verified successfully"))
+                emit(ResultState.Success(supabaseClient.auth.currentSessionOrNull()))
             } catch (e: Exception) {
                 emit(ResultState.Failure(e))
             }
         }
 
-    suspend fun imageUploading(imageUri: Uri, imageBytes: ByteArray): String {
+    // Optional: Add a password reset function
+    fun sendPasswordResetEmail(email: String): Flow<ResultState<String>> =
+        flow {
+            emit(ResultState.Loading)
+            try {
+                supabaseClient.auth.resetPasswordForEmail(email)
+                emit(ResultState.Success("Password reset email sent"))
+            } catch (e: Exception) {
+                emit(ResultState.Failure(e))
+            }
+        }
+
+    suspend fun imageUploading(
+        imageUri: Uri,
+        imageBytes: ByteArray,
+        folderPath: String,
+        bucketId: String
+    ): String {
         return withContext(Dispatchers.IO) {
             try {
                 val extension = when {
@@ -112,8 +181,8 @@ class Repository @Inject constructor(
                     else -> "jpg"
                 }
                 val fileName = "${UUID.randomUUID()}.$safeExtension"
-                val fullPath = "$profileImageFolderPath/$fileName"
-                val bucket = supabaseClient.storage.from(profileImageBucketId)
+                val fullPath = "$folderPath/$fileName"
+                val bucket = supabaseClient.storage.from(bucketId)
                 bucket.upload(
                     path = fullPath,
                     data = imageBytes
@@ -138,7 +207,12 @@ class Repository @Inject constructor(
                 emit(ResultState.Loading)
                 try {
                     val imageUrl = if (imageByteArray != null && imageUri != null) {
-                        imageUploading(imageUri, imageByteArray)
+                        imageUploading(
+                            imageUri,
+                            imageByteArray,
+                            profileImageFolderPath,
+                            profileImageBucketId
+                        )
                     } else {
                         ""
                     }

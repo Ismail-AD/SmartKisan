@@ -47,23 +47,27 @@ import com.appdev.smartkisan.ui.OtherComponents.CustomRatingBar
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ProductDetails(controller:NavHostController,
+fun ProductDetails(
+    controller: NavHostController,
     product: Product = Product(
-        5,
-        "Herbal Medicine for Plants",
-        400,
-        350,
-        R.drawable.imageseed,
-        3.5f,
-        85,
+        id = 5L,
+        creatorId = "",
+        name = "Herbal Medicine for Plants",
+        price = 400.0,
+        discountPrice = 350.0,
+        imageUrls = listOf(), // Will need to handle image URLs differently
+        ratings = 3.5f,
+        reviewsCount = 85L,
         description = "This herbal plant medicine is specially formulated to enhance growth and protect your plants from common diseases. Made from natural ingredients, it boosts plant immunity and encourages healthy development without harsh chemicals. Ideal for organic farming and safe for all types of crops and garden plants.",
-        10.0f, "g"
+        quantity = 100L,
+        weightOrVolume = 10.0f,
+        unit = "g"
     )
 ) {
     Scaffold(topBar = {
         TopAppBar(title = {}, navigationIcon = {
             Card(onClick = {
-                  controller.navigateUp()
+                controller.navigateUp()
             }, shape = RoundedCornerShape(10.dp), modifier = Modifier.padding(start = 10.dp)) {
                 Box(modifier = Modifier.padding(8.dp)) {
                     Icon(
@@ -95,7 +99,7 @@ fun ProductDetails(controller:NavHostController,
                         .clip(RoundedCornerShape(6.dp))
                 ) {
                     Image(
-                        painter = painterResource(id = product.image),
+                        painter = painterResource(id = R.drawable.seedsnew),
                         contentDescription = "",
                         modifier = Modifier
                             .fillMaxWidth()
@@ -113,7 +117,8 @@ fun ProductDetails(controller:NavHostController,
                 Row(
                     modifier = Modifier
                         .padding(top = 4.dp),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
                     if (product.discountPrice > 0) {
                         Text(
@@ -145,11 +150,13 @@ fun ProductDetails(controller:NavHostController,
                     text = "Details",
                     fontSize = 19.sp,
                     fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onBackground,modifier = Modifier
+                    color = MaterialTheme.colorScheme.onBackground, modifier = Modifier
                         .padding(top = 20.dp)
                 )
-                Divider(color = Color.Gray.copy(alpha = 0.2f), thickness = 2.dp,modifier = Modifier
-                    .padding(top = 4.dp))
+                Divider(
+                    color = Color.Gray.copy(alpha = 0.2f), thickness = 2.dp, modifier = Modifier
+                        .padding(top = 4.dp)
+                )
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -162,13 +169,15 @@ fun ProductDetails(controller:NavHostController,
                         color = MaterialTheme.colorScheme.onBackground
                     )
                     Text(
-                        text = product.quantity.toString() + "/" + product.unit,
+                        text = product.weightOrVolume.toString() + "/" + product.unit,
                         fontSize = 16.sp,
                         color = Color.Gray
                     )
                 }
-                Divider(color = Color.Gray.copy(alpha = 0.2f), thickness = 2.dp,modifier = Modifier
-                    .padding(top = 2.dp))
+                Divider(
+                    color = Color.Gray.copy(alpha = 0.2f), thickness = 2.dp, modifier = Modifier
+                        .padding(top = 2.dp)
+                )
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -180,7 +189,10 @@ fun ProductDetails(controller:NavHostController,
                         fontSize = 16.sp,
                         color = MaterialTheme.colorScheme.onBackground
                     )
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(5.dp)
+                    ) {
                         CustomRatingBar(rating = product.ratings)
                         Text(
                             text = "(" + product.ratings + ")",
@@ -193,14 +205,17 @@ fun ProductDetails(controller:NavHostController,
                     text = "Description",
                     fontSize = 19.sp,
                     fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.onBackground,modifier = Modifier
+                    color = MaterialTheme.colorScheme.onBackground, modifier = Modifier
                         .padding(top = 20.dp)
                 )
-                Divider(color = Color.Gray.copy(alpha = 0.2f), thickness = 2.dp,modifier = Modifier
-                    .padding(top = 4.dp))
+                Divider(
+                    color = Color.Gray.copy(alpha = 0.2f), thickness = 2.dp, modifier = Modifier
+                        .padding(top = 4.dp)
+                )
                 Text(
                     text = product.description,
-                    color = MaterialTheme.colorScheme.onBackground, modifier = Modifier .padding(top = 10.dp)
+                    color = MaterialTheme.colorScheme.onBackground,
+                    modifier = Modifier.padding(top = 10.dp)
                 )
             }
         }

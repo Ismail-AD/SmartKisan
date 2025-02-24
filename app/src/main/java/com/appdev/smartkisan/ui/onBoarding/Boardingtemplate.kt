@@ -98,7 +98,7 @@ fun BottomSection(size: Int, index: Int, onButtonClick: () -> Unit = {}) {
             // Indicators
             Indicators(size, index)
         }
-        CustomButton(onClick = { onButtonClick() }, text = if(index+1==size) "SignUp" else "Next")
+        CustomButton(onClick = { onButtonClick() }, text = if(index+1==size) "Get Started" else "Next")
     }
 }
 
