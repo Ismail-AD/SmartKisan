@@ -59,7 +59,7 @@ fun SingleCrop(product: Product,modifier: Modifier = Modifier, onClick: () -> Un
                     .fillMaxWidth()
             ) {
                 Image(
-                    painter = painterResource(id = product.image),
+                    painter = painterResource(id = R.drawable.seedsnew),
                     contentDescription = "",
                     modifier = Modifier
                         .fillMaxSize()

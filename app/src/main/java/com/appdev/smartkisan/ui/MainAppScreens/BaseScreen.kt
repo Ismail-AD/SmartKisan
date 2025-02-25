@@ -81,11 +81,20 @@ fun BaseScreen() {
         Routes.ChatBotScreen.route
     )
 
+    val selectedTabIndex = when (currentRoute) {
+        Routes.HomeScreen.route -> 0
+        Routes.PlantDisease.route -> 1
+        Routes.MarketPlace.route -> 2
+        Routes.AccountScreen.route -> 3
+        else -> -1  // Default value for routes not in the bottom bar
+    }
+
     Scaffold(bottomBar = {
         if (currentRoute !in hideBottomBarRoutes) {
             GlassmorphicBottomNavigation(
                 hazeState = hazeState,
                 navController = controller,
+                selectedTabIndex = if (selectedTabIndex >= 0) selectedTabIndex else 0,
                 tabs = listOf(
                     BottomBarTab(
                         title = "Home",
@@ -138,9 +147,9 @@ fun GlassmorphicBottomNavigation(
     hazeState: HazeState,
     navController: NavHostController,
     tabs: List<CommonBottomBarTab>,
+    selectedTabIndex: Int,
     onTabSelected: (CommonBottomBarTab) -> Unit
 ) {
-    var selectedTabIndex by rememberSaveable { mutableIntStateOf(0) }
     val isDarkTheme = isSystemInDarkTheme()
     val dayColors = if (isDarkTheme)
         listOf(
@@ -169,9 +178,9 @@ fun GlassmorphicBottomNavigation(
             tabs = tabs,
             selectedTab = selectedTabIndex
         ) {
-            selectedTabIndex = tabs.indexOf(it)
             onTabSelected(it)
         }
+
 
         val animatedSelectedTabIndex by animateFloatAsState(
             targetValue = selectedTabIndex.toFloat(),

@@ -33,6 +33,25 @@ class Repository @Inject constructor(
     private val productImageBucketId = "productImages"
     private val productImageFolderPath = "public/cel5c7_0"
 
+
+    fun getProducts(): Flow<ResultState<List<Product>>> =
+        flow {
+            getCurrentUserId()?.let { uid ->
+                emit(ResultState.Loading)
+                try {
+                    val listOfProducts = supabaseClient.from("products").select {
+                        filter {
+                            eq("creatorId", uid)
+                        }
+                    }.decodeList<Product>()
+                    emit(ResultState.Success(listOfProducts))
+                } catch (e: Exception) {
+                    Log.e("SupabaseRepository", "Product addition failed: ${e.message}", e)
+                    emit(ResultState.Failure(e))
+                }
+            }
+        }
+
     fun addProduct(
         product: Product,
         imageByteArrays: List<ByteArray?>,
@@ -58,7 +77,11 @@ class Repository @Inject constructor(
                         }
                     }
 
-                    val productWithImages = product.copy(imageUrls = imageUrls, creatorId = uid)
+                    val productWithImages = product.copy(
+                        imageUrls = imageUrls,
+                        creatorId = uid,
+                        updateTime = System.currentTimeMillis().toString()
+                    )
                     supabaseClient.from("products").insert(productWithImages)
                     emit(ResultState.Success("Product added successfully"))
                 } catch (e: Exception) {

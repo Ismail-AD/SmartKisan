@@ -13,8 +13,10 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
@@ -142,7 +144,20 @@ fun SignUp(loginState: UserAuthState, onAction: (UserAuthAction) -> Unit) {
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Dialog(onDismissRequest = { /*TODO*/ }) {
-                        CircularProgressIndicator()
+                        Box(
+                            modifier = Modifier
+                                .size(80.dp)
+                                .background(
+                                    color = Color.Black,
+                                    shape = RoundedCornerShape(8.dp)
+                                ),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            CircularProgressIndicator(
+                                color = Color.White,
+                                modifier = Modifier.size(40.dp)
+                            )
+                        }
                     }
                 }
             }
@@ -301,7 +316,13 @@ fun SignUp(loginState: UserAuthState, onAction: (UserAuthAction) -> Unit) {
                     visualTransformation = if (loginState.confirmPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                     trailingIcon = {
-                        IconButton(onClick = { onAction(UserAuthAction.UpdateConfirmPasswordVisible(!loginState.confirmPasswordVisible)) }) {
+                        IconButton(onClick = {
+                            onAction(
+                                UserAuthAction.UpdateConfirmPasswordVisible(
+                                    !loginState.confirmPasswordVisible
+                                )
+                            )
+                        }) {
                             Image(
                                 painter = painterResource(
                                     id = if (loginState.confirmPasswordVisible)
@@ -348,7 +369,7 @@ fun SignUp(loginState: UserAuthState, onAction: (UserAuthAction) -> Unit) {
             )
         }
         if (showToastState.first) {
-            Toast.makeText(context,showToastState.second,Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, showToastState.second, Toast.LENGTH_SHORT).show()
 //            SweetError(
 //                message = showToastState.second,
 //                duration = Toast.LENGTH_SHORT,

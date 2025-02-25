@@ -82,35 +82,34 @@ fun SellerHomeScreen(controller: NavHostController) {
 
     val productList = listOf(
         Product(
-            5,
-            "Herbal Medicine for Plants",
-            400,
-            350,
-            R.drawable.seeds,
-            4.7f,
-            85,
-            description = "This herbal plant medicine is specially formulated to enhance growth and protect your plants from common diseases. Made from natural ingredients, it boosts plant immunity and encourages healthy development without harsh chemicals. Ideal for organic farming and safe for all types of crops and garden plants.",
-            10.0f, "g"
-        ), Product(
-            5,
-            "Herbal Medicine for Plants",
-            400,
-            350,
-            R.drawable.seeds,
-            4.7f,
-            85,
-            description = "This herbal plant medicine is specially formulated to enhance growth and protect your plants from common diseases. Made from natural ingredients, it boosts plant immunity and encourages healthy development without harsh chemicals. Ideal for organic farming and safe for all types of crops and garden plants.",
-            10.0f, "g"
-        ), Product(
-            5,
-            "Herbal Medicine for Plants",
-            400,
-            350,
-            R.drawable.seeds,
-            4.7f,
-            85,
-            description = "This herbal plant medicine is specially formulated to enhance growth and protect your plants from common diseases. Made from natural ingredients, it boosts plant immunity and encourages healthy development without harsh chemicals. Ideal for organic farming and safe for all types of crops and garden plants.",
-            10.0f, "g"
+            id = 1L,
+            creatorId = "user123",
+            name = "Herbal Medicine for Plants",
+            price = 400.0,
+            discountPrice = 350.0,
+            imageUrls = listOf("https://example.com/seeds.jpg"),
+            ratings = 4.7f,
+            reviewsCount = 85L,
+            description = "This herbal plant medicine is specially formulated to enhance growth and protect your plants from common diseases...",
+            quantity = 10L,
+            weightOrVolume = 10.0f,
+            updateTime = "2025-02-23T12:00:00Z",
+            unit = "g"
+        ),
+        Product(
+            id = 2L,
+            creatorId = "user124",
+            name = "Organic Plant Booster",
+            price = 500.0,
+            discountPrice = 450.0,
+            imageUrls = listOf("https://example.com/booster.jpg"),
+            ratings = 4.5f,
+            reviewsCount = 120L,
+            description = "Organic booster improves plant immunity and soil health...",
+            quantity = 5L,
+            weightOrVolume = 15.0f,
+            updateTime = "2025-02-23T12:30:00Z",
+            unit = "ml"
         )
     )
     Scaffold(topBar = {

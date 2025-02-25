@@ -1,16 +1,11 @@
 package com.appdev.smartkisan.ui.SellerAppScreens
 
 import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Build
 import androidx.compose.material.icons.rounded.Email
 import androidx.compose.material.icons.rounded.Home
 import androidx.compose.material.icons.rounded.Person
-import androidx.compose.material.icons.rounded.ShoppingCart
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -19,13 +14,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import com.appdev.smartkisan.ViewModel.LoginViewModel
-import com.appdev.smartkisan.ViewModel.StoreViewModel
 import com.appdev.smartkisan.ui.MainAppScreens.BottomBarTab
 import com.appdev.smartkisan.ui.MainAppScreens.GlassmorphicBottomNavigation
 import com.appdev.smartkisan.ui.navigation.Routes
@@ -45,27 +37,37 @@ fun SellerBaseScreen() {
         Routes.AddProductScreen.route
     )
 
+    val selectedTabIndex = when (currentRoute) {
+        Routes.SellerHomeScreen.route -> 0
+        Routes.SellerInboxScreen.route -> 1
+        Routes.SellerAccountScreen.route -> 2
+        else -> -1  // Default value for routes not in the bottom bar
+    }
+
     Scaffold(bottomBar = {
         if (currentRoute !in hideBottomBarRoutes && !isSearchFocused) {
+            val tabs = listOf(
+                BottomBarTab(
+                    title = "Home",
+                    icon = Icons.Rounded.Home,
+                    color = if (isSystemInDarkTheme()) Color(0xFFFA6FFF) else Color(0xFFE64A19)
+                ),
+                BottomBarTab(
+                    title = "Inbox",
+                    icon = Icons.Rounded.Email,
+                    color = if (isSystemInDarkTheme()) Color(0xFFADFF64) else Color(0xFF2196F3)
+                ),
+                BottomBarTab(
+                    title = "Account",
+                    icon = Icons.Rounded.Person,
+                    color = if (isSystemInDarkTheme()) Color(0xFFFFA574) else Color(0xFFE91E63)
+                )
+            )
             GlassmorphicBottomNavigation(
                 hazeState = hazeState,
                 navController = controller,
-                tabs = listOf(
-                    BottomBarTab(
-                        title = "Home",
-                        icon = Icons.Rounded.Home,
-                        color = if (isSystemInDarkTheme()) Color(0xFFFA6FFF) else Color(0xFFE64A19) // Stronger pink
-                    ),
-                    BottomBarTab(
-                        title = "Inbox",
-                        icon = Icons.Rounded.Email,
-                        color = if (isSystemInDarkTheme()) Color(0xFFADFF64) else Color(0xFF2196F3) // Brighter blue
-                    ), BottomBarTab(
-                        title = "Account",
-                        icon = Icons.Rounded.Person,
-                        color = if (isSystemInDarkTheme()) Color(0xFFFFA574) else Color(0xFFE91E63)  // More vibrant orange
-                    )
-                )
+                selectedTabIndex = if (selectedTabIndex >= 0) selectedTabIndex else 0,
+                tabs = tabs
             ) { selectedTab ->
                 when (selectedTab.title) {
                     "Home" -> controller.navigate(Routes.SellerHomeScreen.route)
@@ -82,7 +84,9 @@ fun SellerBaseScreen() {
             composable(Routes.SellerHomeScreen.route) { SellerHomeScreen(controller) }
             composable(Routes.SellerAccountScreen.route) { SellerProfileScreen() }
             composable(Routes.ChatInDetailScreen.route) { InDetailChatScreen(controller) }
-            composable(Routes.StoreManagementScreen.route) { StoreManagementScreen(controller) }
+            composable(Routes.StoreManagementScreen.route) { StoreManagementRoot(
+                controller
+            ) }
             composable(Routes.AddProductScreen.route) {
                 AddProductRoot(controller)
             }

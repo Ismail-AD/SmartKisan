@@ -7,6 +7,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
@@ -20,19 +21,19 @@ import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.foundation.text.selection.LocalTextSelectionColors
-import androidx.compose.foundation.text.selection.SelectionContainer
-import androidx.compose.foundation.text.selection.TextSelectionColors
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -43,14 +44,14 @@ import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -58,19 +59,19 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
-import com.appdev.smartkisan.Actions.SellerStoreActions
-import com.appdev.smartkisan.Actions.UserAuthAction
+import com.appdev.smartkisan.Actions.ProductActions
 import com.appdev.smartkisan.R
 import com.appdev.smartkisan.States.ProductState
 import com.appdev.smartkisan.ViewModel.StoreViewModel
 import com.appdev.smartkisan.ui.OtherComponents.CustomButton
+import com.appdev.smartkisan.ui.ReUseableComponents.CustomLoader
 import com.appdev.smartkisan.ui.theme.myGreen
 
 
@@ -81,7 +82,7 @@ fun AddProductRoot(
 ) {
     AddProductScreen(storeViewModel.productState, onAction = { action ->
         when (action) {
-            is SellerStoreActions.GoBack -> {
+            is ProductActions.GoBack -> {
                 navHostController.navigateUp()
             }
 
@@ -93,9 +94,20 @@ fun AddProductRoot(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AddProductScreen(productState: ProductState, onAction: (SellerStoreActions) -> Unit) {
+fun AddProductScreen(productState: ProductState, onAction: (ProductActions) -> Unit) {
     val context = LocalContext.current
     var showToastState by remember { mutableStateOf(Pair(false, "")) }
+    LaunchedEffect(productState.errorMessage) {
+        productState.errorMessage?.let { error ->
+            showToastState = Pair(true, error)
+            onAction.invoke(ProductActions.ClearValidationError)
+        }
+    }
+    LaunchedEffect(key1 = productState.uploaded) {
+        if (productState.uploaded) {
+            onAction(ProductActions.GoBack)
+        }
+    }
 
     Scaffold(topBar = {
         TopAppBar(title = {
@@ -107,7 +119,7 @@ fun AddProductScreen(productState: ProductState, onAction: (SellerStoreActions) 
             )
         }, navigationIcon = {
             IconButton(onClick = {
-
+                onAction.invoke(ProductActions.GoBack)
             }) {
                 Icon(
                     painter = painterResource(id = R.drawable.arrow),
@@ -124,6 +136,9 @@ fun AddProductScreen(productState: ProductState, onAction: (SellerStoreActions) 
                 .background(MaterialTheme.colorScheme.background)
                 .padding(innerPadding)
         ) {
+            if (productState.isLoading) {
+                CustomLoader("Saving Product....")
+            }
 
             Column(
                 modifier = Modifier
@@ -138,7 +153,7 @@ fun AddProductScreen(productState: ProductState, onAction: (SellerStoreActions) 
                     value = productState.productName,
                     onValueChange = {
                         onAction.invoke(
-                            SellerStoreActions.ProductNameUpdated(
+                            ProductActions.ProductNameUpdated(
                                 productName = it
                             )
                         )
@@ -148,12 +163,12 @@ fun AddProductScreen(productState: ProductState, onAction: (SellerStoreActions) 
 
                 TitledOutlinedTextField(
                     title = "Product Price",
-                    value = productState.price.toString(),
+                    value = productState.price,
                     onValueChange = {
                         if (it.all { char -> char.isDigit() || char == '.' }) {
                             onAction.invoke(
-                                SellerStoreActions.PriceUpdated(
-                                    price = it.toDouble()
+                                ProductActions.PriceUpdated(
+                                    price = it
                                 )
                             )
                         }
@@ -162,28 +177,44 @@ fun AddProductScreen(productState: ProductState, onAction: (SellerStoreActions) 
                     singleLine = true, isNumber = true
                 )
 
-                TitledOutlinedTextField(
-                    title = "Quantity",
-                    value = productState.quantity.toString(),
-                    onValueChange = {
-                        if (it.all { char -> char.isDigit() }) {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    TitledOutlinedTextField(
+                        title = "Quantity",
+                        value = productState.quantity,
+                        onValueChange = {
+                            if (it.all { char -> char.isDigit() }) {
+                                onAction.invoke(
+                                    ProductActions.QuantityUpdated(
+                                        quantity = it
+                                    )
+                                )
+                            }
+                        },
+                        placeholder = "Enter your product quantity",
+                        singleLine = true, isNumber = true
+                    )
+                    DropdownMenu(
+                        title = "Product Type",
+                        options = productState.categories,
+                        selectedOption = productState.selectedCategory,
+                        onOptionSelected = {
                             onAction.invoke(
-                                SellerStoreActions.QuantityUpdated(
-                                    quantity = it.toLong()
+                                ProductActions.CategoryUpdated(
+                                    category = it
                                 )
                             )
-                        }
-                    },
-                    placeholder = "Enter your product price",
-                    singleLine = true, isNumber = true
-                )
+                        },
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+
 
                 TitledOutlinedTextField(
                     title = "Product Description",
                     value = productState.description,
                     onValueChange = {
                         onAction.invoke(
-                            SellerStoreActions.DescriptionUpdated(
+                            ProductActions.DescriptionUpdated(
                                 description = it
                             )
                         )
@@ -195,22 +226,21 @@ fun AddProductScreen(productState: ProductState, onAction: (SellerStoreActions) 
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     TitledOutlinedTextField(
                         title = "Weight or Volume",
-                        value = productState.weight.toString(),
+                        value = productState.weight,
                         onValueChange = { input ->
-                            onAction.invoke(SellerStoreActions.WeightUpdated(input.filter { it.isDigit() }
-                                .toFloat()))
+                            onAction.invoke(ProductActions.WeightUpdated(input.filter { it.isDigit() }))
                         },
                         placeholder = "e.g., 250",
                         modifier = Modifier.weight(1f), singleLine = true, isNumber = true
                     )
 
-                    MeasurementDropdown(
+                    DropdownMenu(
                         title = "Measurement Type",
-                        measurements = productState.measurements,
+                        options = productState.measurements,
                         selectedOption = productState.measurement,
                         onOptionSelected = {
                             onAction.invoke(
-                                SellerStoreActions.MeasurementUpdated(
+                                ProductActions.MeasurementUpdated(
                                     measurement = it
                                 )
                             )
@@ -232,42 +262,44 @@ fun AddProductScreen(productState: ProductState, onAction: (SellerStoreActions) 
                         .horizontalScroll(rememberScrollState())
                         .padding(vertical = 8.dp)
                 ) {
-                    // Display existing image selectors
                     productState.imageUris.forEachIndexed { index, uri ->
                         ImageSelector(
                             uri = uri,
                             index = index,
                             onImageSelect = { selectedUri, idx ->
-                                onAction(SellerStoreActions.SelectedImageUri(selectedUri, idx))
+                                onAction(ProductActions.SelectedImageUri(selectedUri, idx))
+                            },
+                            onImageRemove = { idx ->
+                                // Add action to handle image removal
+                                onAction(ProductActions.RemoveImage(idx))
                             }
                         )
                     }
 
-                    // Always show one empty selector at the end when there's room for more images
-                    // (assuming a reasonable max of 5 images)
                     if (productState.imageUris.size < 5) {
                         ImageSelector(
                             uri = null,
                             index = productState.imageUris.size,
                             onImageSelect = { selectedUri, idx ->
-                                onAction(SellerStoreActions.SelectedImageUri(selectedUri, idx))
+                                onAction(ProductActions.SelectedImageUri(selectedUri, idx))
                             }
                         )
                     }
                 }
                 CustomButton(
                     onClick = {
-                        val imageBytesList: List<ByteArray?> = productState.imageUris.mapNotNull { uri ->
-                            try {
-                                context.contentResolver.openInputStream(uri)?.use {
-                                    it.readBytes()
+                        val imageBytesList: List<ByteArray?> =
+                            productState.imageUris.mapNotNull { uri ->
+                                try {
+                                    context.contentResolver.openInputStream(uri)?.use {
+                                        it.readBytes()
+                                    }
+                                } catch (e: Exception) {
+                                    showToastState = Pair(true, "Failed to process image!")
+                                    null
                                 }
-                            } catch (e: Exception) {
-                                showToastState = Pair(true, "Failed to process image!")
-                                null
                             }
-                        }
-                        onAction.invoke(SellerStoreActions.AddToStore(listOfImageByteArrays = imageBytesList))
+                        onAction.invoke(ProductActions.AddToStore(listOfImageByteArrays = imageBytesList))
                     },
                     text = "Save Product",
                     width = 1f,
@@ -275,7 +307,7 @@ fun AddProductScreen(productState: ProductState, onAction: (SellerStoreActions) 
                 )
             }
             if (showToastState.first) {
-                Toast.makeText(context,showToastState.second, Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, showToastState.second, Toast.LENGTH_SHORT).show()
                 showToastState = Pair(false, "")
             }
         }
@@ -283,9 +315,13 @@ fun AddProductScreen(productState: ProductState, onAction: (SellerStoreActions) 
 }
 
 
-
 @Composable
-fun ImageSelector(uri: Uri?, index: Int, onImageSelect: (Uri, Int) -> Unit) {
+fun ImageSelector(
+    uri: Uri?,
+    index: Int,
+    onImageSelect: (Uri, Int) -> Unit,
+    onImageRemove: (Int) -> Unit = {} // New parameter for image removal
+) {
     val context = LocalContext.current
 
     val launcher = rememberLauncherForActivityResult(
@@ -296,25 +332,49 @@ fun ImageSelector(uri: Uri?, index: Int, onImageSelect: (Uri, Int) -> Unit) {
         }
     }
 
-    Card(
-        onClick = { launcher.launch("image/*") },
-        modifier = Modifier.size(110.dp),
-        border = BorderStroke(1.dp, Color.LightGray),
-        colors = CardDefaults.cardColors(containerColor = Color.Transparent)
-    ) {
-        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            AsyncImage(
-                model = ImageRequest.Builder(context)
-                    .data(uri)
-                    .build(),
-                contentDescription = "Product Image",
-                placeholder = painterResource(R.drawable.placeimage),
-                error = painterResource(R.drawable.placeimage),
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(if (uri != null) 0.dp else 35.dp),
-                contentScale = ContentScale.Crop
-            )
+    Box(modifier = Modifier.size(110.dp)) {
+        Card(
+            onClick = { launcher.launch("image/*") },
+            modifier = Modifier.fillMaxSize(),
+            border = BorderStroke(1.dp, Color.LightGray),
+            colors = CardDefaults.cardColors(containerColor = Color.Transparent)
+        ) {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                AsyncImage(
+                    model = ImageRequest.Builder(context)
+                        .data(uri)
+                        .build(),
+                    contentDescription = "Product Image",
+                    placeholder = painterResource(R.drawable.placeimage),
+                    error = painterResource(R.drawable.placeimage),
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(if (uri != null) 0.dp else 35.dp),
+                    contentScale = ContentScale.Crop
+                )
+            }
+        }
+
+        // Only show remove button if there is an image
+        if (uri != null) {
+            if (uri != null) {
+                Box(
+                    modifier = Modifier
+                        .size(22.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.surfaceVariant)
+                        .align(Alignment.TopEnd)
+                        .clickable { onImageRemove(index) },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Close,
+                        contentDescription = "Remove Image",
+                        tint = MaterialTheme.colorScheme.onBackground,
+                        modifier = Modifier.size(16.dp)
+                    )
+                }
+            }
         }
     }
 }
@@ -352,9 +412,9 @@ fun TitledOutlinedTextField(
                 focusedIndicatorColor = myGreen,
                 unfocusedContainerColor = Color.Transparent,
                 focusedContainerColor = Color.Transparent,
-                cursorColor = myGreen
+                cursorColor = myGreen,
             ),
-            placeholder = { Text(placeholder) },
+            placeholder = { Text(placeholder, color = Color.Gray) },
             keyboardOptions = if (isNumber) KeyboardOptions.Default.copy(keyboardType = KeyboardType.Number) else KeyboardOptions.Default.copy(
                 keyboardType = KeyboardType.Unspecified
             )
@@ -364,9 +424,9 @@ fun TitledOutlinedTextField(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MeasurementDropdown(
+fun DropdownMenu(
     title: String,
-    measurements: List<String>,
+    options: List<String>,
     selectedOption: String,
     onOptionSelected: (String) -> Unit,
     modifier: Modifier = Modifier
@@ -416,7 +476,7 @@ fun MeasurementDropdown(
                     )
                 )
             ) {
-                measurements.forEachIndexed { index, item ->
+                options.forEachIndexed { index, item ->
                     DropdownMenuItem(
                         text = {
                             Text(
