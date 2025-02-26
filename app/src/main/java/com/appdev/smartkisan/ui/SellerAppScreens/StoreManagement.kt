@@ -1,5 +1,6 @@
 package com.appdev.smartkisan.ui.SellerAppScreens
 
+import android.net.Uri
 import android.widget.Toast
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -34,11 +35,8 @@ import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -52,15 +50,18 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
+import androidx.navigation.navArgument
 import com.appdev.smartkisan.Actions.StoreActions
 import com.appdev.smartkisan.R
 import com.appdev.smartkisan.States.StoreUiState
 import com.appdev.smartkisan.ViewModel.StoreViewModel
 import com.appdev.smartkisan.ui.OtherComponents.ExpandedItem
 import com.appdev.smartkisan.ui.OtherComponents.SearchField
-import com.appdev.smartkisan.ui.ReUseableComponents.CustomLoader
+import com.appdev.smartkisan.ui.OtherComponents.CustomLoader
 import com.appdev.smartkisan.ui.navigation.Routes
 import com.appdev.smartkisan.ui.theme.myGreen
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 
 
 @Composable
@@ -69,10 +70,24 @@ fun StoreManagementRoot(
     storeViewModel: StoreViewModel = hiltViewModel()
 ) {
     val productListState by storeViewModel.storeUiState.collectAsStateWithLifecycle()
+    LaunchedEffect(Unit) {
+        storeViewModel.onStoreAction(StoreActions.LoadProducts)
+    }
     StoreManagementScreen(productListState, onStoreAction = { action ->
         when (action) {
             is StoreActions.NavigateToAddProduct -> {
-                navHostController.navigate(Routes.AddProductScreen.route)
+                val route = if (action.product != null) {
+                    val productJson = Uri.encode(Json.encodeToString(action.product))
+                    Routes.AddProductScreen.route + "/$productJson"
+                } else {
+                    Routes.AddProductScreen.route+ "/{}"
+                }
+                navHostController.navigate(route)
+            }
+
+            is StoreActions.NavigateToProductDetail -> {
+                val productJson = Uri.encode(Json.encodeToString(action.product))
+                navHostController.navigate(Routes.ProductDetailScreen.route + "/$productJson")
             }
 
             is StoreActions.NavigateBack -> {
@@ -122,7 +137,7 @@ fun StoreManagementScreen(
         },
         floatingActionButton = {
             FloatingActionButton(
-                onClick = { onStoreAction(StoreActions.NavigateToAddProduct) },
+                onClick = { onStoreAction(StoreActions.NavigateToAddProduct(null)) },
                 containerColor = myGreen,
                 contentColor = Color.White
             ) {
@@ -235,7 +250,7 @@ fun StoreManagementScreen(
                 // Product list
                 when {
                     uiState.isLoading -> {
-                        CustomLoader("Loading Products...")
+                        CustomLoader()
                     }
 
                     uiState.error != null -> {
@@ -273,8 +288,16 @@ fun StoreManagementScreen(
                             verticalArrangement = Arrangement.spacedBy(15.dp)
                         ) {
                             itemsIndexed(filteredProducts) { index, product ->
-                                ExpandedItem(product) {
-                                    // Could add an intent to navigate to product details
+                                ExpandedItem(context, product, onDelete = {
+                                    onStoreAction.invoke(StoreActions.DeleteProduct(it))
+                                }, onUpdate = {
+                                    onStoreAction.invoke(StoreActions.NavigateToAddProduct(it))
+                                }) {
+                                    onStoreAction.invoke(
+                                        StoreActions.NavigateToProductDetail(
+                                            product
+                                        )
+                                    )
                                 }
                                 if (index == filteredProducts.lastIndex) {
                                     Spacer(modifier = Modifier.height(80.dp))

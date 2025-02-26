@@ -44,25 +44,13 @@ import androidx.navigation.NavHostController
 import com.appdev.smartkisan.R
 import com.appdev.smartkisan.data.Product
 import com.appdev.smartkisan.ui.OtherComponents.CustomRatingBar
+import com.appdev.smartkisan.ui.OtherComponents.CustomSlider
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProductDetails(
     controller: NavHostController,
-    product: Product = Product(
-        id = 5L,
-        creatorId = "",
-        name = "Herbal Medicine for Plants",
-        price = 400.0,
-        discountPrice = 350.0,
-        imageUrls = listOf(), // Will need to handle image URLs differently
-        ratings = 3.5f,
-        reviewsCount = 85L,
-        description = "This herbal plant medicine is specially formulated to enhance growth and protect your plants from common diseases. Made from natural ingredients, it boosts plant immunity and encourages healthy development without harsh chemicals. Ideal for organic farming and safe for all types of crops and garden plants.",
-        quantity = 100L,
-        weightOrVolume = 10.0f,
-        unit = "g"
-    )
+    product: Product
 ) {
     Scaffold(topBar = {
         TopAppBar(title = {}, navigationIcon = {
@@ -94,16 +82,12 @@ fun ProductDetails(
                     .verticalScroll(rememberScrollState()),
             ) {
                 Box(
-                    Modifier
+                    Modifier.fillMaxWidth()
                         .background(Color.Transparent)
                         .clip(RoundedCornerShape(6.dp))
                 ) {
-                    Image(
-                        painter = painterResource(id = R.drawable.seedsnew),
-                        contentDescription = "",
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(370.dp), contentScale = ContentScale.FillBounds
+                    CustomSlider(
+                        sliderList = product.imageUrls.toMutableList()
                     )
                 }
                 Text(

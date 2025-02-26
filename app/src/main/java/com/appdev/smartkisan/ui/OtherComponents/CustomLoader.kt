@@ -1,4 +1,4 @@
-package com.appdev.smartkisan.ui.ReUseableComponents
+package com.appdev.smartkisan.ui.OtherComponents
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -19,7 +19,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 
 @Composable
-fun CustomLoader(text:String) {
+fun CustomLoader() {
     Box(
         modifier = Modifier.fillMaxSize(),
     ) {
@@ -31,22 +31,17 @@ fun CustomLoader(text:String) {
             Dialog(onDismissRequest = { /*TODO*/ }) {
                 Box(
                     modifier = Modifier
-                        .size(100.dp)
+                        .size(90.dp)
                         .background(
                             color = Color.Black,
                             shape = RoundedCornerShape(8.dp)
                         ),
                     contentAlignment = Alignment.Center
                 ) {
-                    CircularProgressIndicator(
-                        color = Color.White,
-                        modifier = Modifier.size(40.dp)
-                    )
-                    Text(
-                        text,
-                        modifier = Modifier.padding(top = 16.dp),
-                        color = MaterialTheme.colorScheme.onBackground
-                    )
+                        CircularProgressIndicator(
+                            color = Color.White,
+                            modifier = Modifier.size(35.dp)
+                        )
                 }
             }
         }

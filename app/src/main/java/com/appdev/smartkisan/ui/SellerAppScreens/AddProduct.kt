@@ -1,6 +1,7 @@
 package com.appdev.smartkisan.ui.SellerAppScreens
 
 import android.net.Uri
+import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -29,7 +30,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
@@ -61,7 +61,6 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.window.Dialog
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import coil3.compose.AsyncImage
@@ -69,17 +68,20 @@ import coil3.request.ImageRequest
 import com.appdev.smartkisan.Actions.ProductActions
 import com.appdev.smartkisan.R
 import com.appdev.smartkisan.States.ProductState
+import com.appdev.smartkisan.Utils.Functions
 import com.appdev.smartkisan.ViewModel.StoreViewModel
+import com.appdev.smartkisan.data.Product
 import com.appdev.smartkisan.ui.OtherComponents.CustomButton
-import com.appdev.smartkisan.ui.ReUseableComponents.CustomLoader
+import com.appdev.smartkisan.ui.OtherComponents.CustomLoader
 import com.appdev.smartkisan.ui.theme.myGreen
 
 
 @Composable
 fun AddProductRoot(
     navHostController: NavHostController,
-    storeViewModel: StoreViewModel = hiltViewModel()
+    storeViewModel: StoreViewModel
 ) {
+
     AddProductScreen(storeViewModel.productState, onAction = { action ->
         when (action) {
             is ProductActions.GoBack -> {
@@ -137,7 +139,7 @@ fun AddProductScreen(productState: ProductState, onAction: (ProductActions) -> U
                 .padding(innerPadding)
         ) {
             if (productState.isLoading) {
-                CustomLoader("Saving Product....")
+                CustomLoader()
             }
 
             Column(
@@ -181,6 +183,7 @@ fun AddProductScreen(productState: ProductState, onAction: (ProductActions) -> U
                     TitledOutlinedTextField(
                         title = "Quantity",
                         value = productState.quantity,
+                        modifier = Modifier.weight(1f),
                         onValueChange = {
                             if (it.all { char -> char.isDigit() }) {
                                 onAction.invoke(
@@ -288,20 +291,46 @@ fun AddProductScreen(productState: ProductState, onAction: (ProductActions) -> U
                 }
                 CustomButton(
                     onClick = {
-                        val imageBytesList: List<ByteArray?> =
-                            productState.imageUris.mapNotNull { uri ->
-                                try {
-                                    context.contentResolver.openInputStream(uri)?.use {
-                                        it.readBytes()
+                        Log.d("CHJZAX","Images changed : ${Functions.haveImagesChanged(
+                            productState.imageUris,
+                            productState.initialUris
+                        )}")
+                        if (Functions.haveImagesChanged(
+                                productState.imageUris,
+                                productState.initialUris
+                            )
+                        ) {
+                            val imageBytesList: List<ByteArray?> =
+                                productState.imageUris.mapNotNull { uri ->
+                                    try {
+                                        context.contentResolver.openInputStream(uri)?.use {
+                                            it.readBytes()
+                                        }
+                                    } catch (e: Exception) {
+                                        showToastState = Pair(true, "Failed to process image!")
+                                        null
                                     }
-                                } catch (e: Exception) {
-                                    showToastState = Pair(true, "Failed to process image!")
-                                    null
                                 }
+                            if (productState.pid != null) {
+                                onAction.invoke(
+                                    ProductActions.UpdateTheProduct(
+                                        listOfImageByteArrays = imageBytesList,
+                                        productState.imageURLS
+                                    )
+                                )
+                            } else {
+                                onAction.invoke(ProductActions.AddToStore(listOfImageByteArrays = imageBytesList))
                             }
-                        onAction.invoke(ProductActions.AddToStore(listOfImageByteArrays = imageBytesList))
+                        } else {
+                            onAction.invoke(
+                                ProductActions.UpdateTheProduct(
+                                    null,
+                                    productState.imageURLS
+                                )
+                            )
+                        }
                     },
-                    text = "Save Product",
+                    text = if (productState.pid != null) "Update Product" else "Save Product",
                     width = 1f,
                     modifier = Modifier.padding(top = 10.dp, bottom = 20.dp)
                 )

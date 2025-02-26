@@ -34,23 +34,97 @@ class Repository @Inject constructor(
     private val productImageFolderPath = "public/cel5c7_0"
 
 
-    fun getProducts(): Flow<ResultState<List<Product>>> =
-        flow {
-            getCurrentUserId()?.let { uid ->
-                emit(ResultState.Loading)
-                try {
-                    val listOfProducts = supabaseClient.from("products").select {
-                        filter {
-                            eq("creatorId", uid)
-                        }
-                    }.decodeList<Product>()
-                    emit(ResultState.Success(listOfProducts))
-                } catch (e: Exception) {
-                    Log.e("SupabaseRepository", "Product addition failed: ${e.message}", e)
-                    emit(ResultState.Failure(e))
-                }
+    fun getProducts(): Flow<ResultState<List<Product>>> = flow {
+        getCurrentUserId()?.let { uid ->
+            emit(ResultState.Loading)
+            try {
+                val listOfProducts = supabaseClient.from("products").select {
+                    filter {
+                        eq("creatorId", uid)
+                    }
+                }.decodeList<Product>()
+                emit(ResultState.Success(listOfProducts))
+            } catch (e: Exception) {
+                Log.e("SupabaseRepository", "Product retrieval failed: ${e.message}", e)
+                emit(ResultState.Failure(e))
             }
         }
+    }
+
+    fun updateProduct(
+        product: Product, imageByteArrays: List<ByteArray?>?,
+        imageUris: List<Uri?>?
+    ): Flow<ResultState<String>> = flow {
+        getCurrentUserId()?.let { uid ->
+            emit(ResultState.Loading)
+            try {
+                val imageUrls = mutableListOf<String>()
+                if (imageByteArrays != null) {
+                    for (i in imageByteArrays.indices) {
+                        val byteArray = imageByteArrays[i]
+                        val uri = imageUris?.getOrNull(i)
+                        if (byteArray != null && uri != null) {
+                            val imageUrl = imageUploading(
+                                uri,
+                                byteArray,
+                                productImageFolderPath,
+                                productImageBucketId
+                            )
+                            imageUrls.add(imageUrl)
+                        }
+                    }
+                }
+                if (imageUrls.isEmpty()) {
+                    imageUrls.addAll(product.imageUrls)
+                }
+                supabaseClient.from("products").update(
+                    {
+                        set("creatorId", uid)
+                        set("category", product.category)
+                        set("name", product.name)
+                        set("price", product.price)
+                        set("discountPrice", product.discountPrice)
+                        set("imageUrls", imageUrls)
+                        set("ratings", product.ratings)
+                        set("reviewsCount", product.reviewsCount)
+                        set("description", product.description)
+                        set("quantity", product.quantity)
+                        set("weightOrVolume", product.weightOrVolume)
+                        set("updateTime", System.currentTimeMillis().toString())
+                        set("unit", product.unit)
+                    }
+                ) {
+                    filter {
+                        eq("id", product.id)
+                        eq("creatorId", uid)
+                    }
+                }
+
+                emit(ResultState.Success("Product Updated Successfully!"))
+            } catch (e: Exception) {
+                Log.e("SupabaseRepository", "Product update failed: ${e.localizedMessage}", e)
+                emit(ResultState.Failure(e))
+            }
+        }
+    }
+
+    fun deleteProduct(productId: Long): Flow<ResultState<String>> = flow {
+        getCurrentUserId()?.let { uid ->
+            emit(ResultState.Loading)
+            try {
+                supabaseClient.from("products").delete {
+                    filter {
+                        eq("id", productId)
+                        eq("creatorId", uid)
+                    }
+                }
+                emit(ResultState.Success("Product deleted Successfully!"))
+            } catch (e: Exception) {
+                Log.e("SupabaseRepository", "Product deletion failed: ${e.message}", e)
+                emit(ResultState.Failure(e))
+            }
+        }
+    }
 
     fun addProduct(
         product: Product,

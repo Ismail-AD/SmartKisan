@@ -1,5 +1,6 @@
 package com.appdev.smartkisan.ui.OtherComponents
 
+import android.content.Context
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -31,6 +32,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
@@ -39,6 +41,9 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.compose.rememberNavController
+import coil3.compose.AsyncImage
+import coil3.request.ImageRequest
+import coil3.request.crossfade
 import com.appdev.smartkisan.R
 import com.appdev.smartkisan.data.Product
 import com.appdev.smartkisan.ui.SellerAppScreens.SellerChatScreen
@@ -48,7 +53,14 @@ import com.appdev.smartkisan.ui.theme.myGreen
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ExpandedItem(product: Product, modifier: Modifier = Modifier, onClick: () -> Unit) {
+fun ExpandedItem(
+    context: Context,
+    product: Product,
+    modifier: Modifier = Modifier,
+    onUpdate: (Product) -> Unit = {},
+    onDelete: (pid: Long) -> Unit = {},
+    onClick: () -> Unit
+) {
 
     Card(
         onClick = onClick,
@@ -137,12 +149,15 @@ fun ExpandedItem(product: Product, modifier: Modifier = Modifier, onClick: () ->
                 }
 
                 Column(
-                    modifier = Modifier.fillMaxHeight().padding(end = 5.dp),
+                    modifier = Modifier
+                        .fillMaxHeight()
+                        .padding(end = 5.dp),
                     verticalArrangement = Arrangement.Center,
                     horizontalAlignment = Alignment.End
                 ) {
                     Card(
                         onClick = {
+                            onUpdate(product)
                         },
                         shape = RoundedCornerShape(10.dp),
                         colors = CardDefaults.cardColors(containerColor = myGreen)
@@ -158,6 +173,7 @@ fun ExpandedItem(product: Product, modifier: Modifier = Modifier, onClick: () ->
                     }
                     Card(
                         onClick = {
+                            onDelete(product.id)
                         },
                         shape = RoundedCornerShape(10.dp),
                         colors = CardDefaults.cardColors(containerColor = myGreen)
@@ -180,40 +196,19 @@ fun ExpandedItem(product: Product, modifier: Modifier = Modifier, onClick: () ->
                     .offset(x = (-18).dp)
                     .align(Alignment.CenterStart)
             ) {
-                Image(
-                    painter = painterResource(id = R.drawable.seedsnew), // Replace with your image resource
-                    contentDescription = "Potato",
+                AsyncImage(
+                    model = ImageRequest.Builder(context)
+                        .data(product.imageUrls.firstOrNull())
+                        .crossfade(true)
+                        .build(),
+                    contentDescription = "Product first Image",
+                    placeholder = painterResource(R.drawable.placholder),
+                    error = painterResource(R.drawable.placholder),
                     contentScale = ContentScale.Crop,
-                    modifier = Modifier.fillMaxSize()
+                    modifier = Modifier.fillMaxSize(),
                 )
             }
         }
     }
 }
-
-
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    SmartKisanTheme {
-        ExpandedItem(
-            Product(
-                id = 1L,
-                creatorId = "user123",
-                name = "Herbal Medicine for Plants",
-                price = 400.0,
-                discountPrice = 350.0,
-                imageUrls = listOf("https://example.com/seeds.jpg"),
-                ratings = 4.7f,
-                reviewsCount = 85L,
-                description = "This herbal plant medicine is specially formulated to enhance growth and protect your plants from common diseases...",
-                quantity = 10L,
-                weightOrVolume = 10.0f,
-                updateTime = "2025-02-23T12:00:00Z",
-                unit = "g"
-            )
-        ) { }
-    }
-}
-
 

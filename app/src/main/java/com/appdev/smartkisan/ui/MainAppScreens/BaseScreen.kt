@@ -61,10 +61,13 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
+import com.appdev.smartkisan.data.Product
 import com.appdev.smartkisan.ui.navigation.Routes
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.hazeChild
@@ -135,8 +138,15 @@ fun BaseScreen() {
             composable(Routes.MarketPlace.route) { MarketPlace(controller) }
             composable(Routes.PlantDisease.route) { PlantDisease(controller) }
             composable(Routes.DiagnosisResult.route) { DiagnosisResult(controller) }
-            composable(route = Routes.ProductDetailScreen.route) {
-                ProductDetails(controller)
+            composable(route = Routes.ProductDetailScreen.route + "/{product}", arguments = listOf(
+                navArgument("product") {
+                    type = NavType.ParcelableType(Product::class.java)
+                }
+            )) { backStackEntry ->
+                val product = backStackEntry.arguments?.getParcelable<Product>("product")
+                if (product != null) {
+                    ProductDetails(product = product, controller = controller)
+                }
             }
         }
     }

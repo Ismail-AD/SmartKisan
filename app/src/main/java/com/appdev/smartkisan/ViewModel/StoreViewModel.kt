@@ -1,5 +1,7 @@
 package com.appdev.smartkisan.ViewModel
 
+import android.net.Uri
+import android.util.Log
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -10,6 +12,7 @@ import com.appdev.smartkisan.Actions.StoreActions
 import com.appdev.smartkisan.Repository.Repository
 import com.appdev.smartkisan.States.ProductState
 import com.appdev.smartkisan.States.StoreUiState
+import com.appdev.smartkisan.Utils.Functions
 import com.appdev.smartkisan.Utils.ResultState
 import com.appdev.smartkisan.data.Product
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -30,6 +33,22 @@ class StoreViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(StoreUiState(isLoading = true))
     val storeUiState = _uiState.asStateFlow()
 
+    fun initializeWithProduct(product: Product) {
+        productState = ProductState(
+            pid = product.id,
+            productName = product.name,
+            price = product.price.toString(),
+            description = product.description,
+            quantity = product.quantity.toString(),
+            weight = product.weightOrVolume.toString(),
+            measurement = product.unit ?: "",
+            selectedCategory = product.category,
+            imageUris = product.imageUrls.map { Uri.parse(it) },
+            initialUris = product.imageUrls.map { Uri.parse(it) },
+            imageURLS = product.imageUrls
+        )
+    }
+
     private fun fetchProducts() {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true, error = null)
@@ -43,12 +62,81 @@ class StoreViewModel @Inject constructor(
                             error = null
                         )
                     }
+
                     is ResultState.Failure -> {
                         _uiState.value.copy(
                             isLoading = false,
                             error = result.msg.localizedMessage
                         )
                     }
+
+                    ResultState.Loading -> {
+                        _uiState.value.copy(
+                            isLoading = true,
+                            error = null
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    fun updateProduct(
+        product: Product, imageByteArrays: List<ByteArray?>?,
+        imageUris: List<Uri?>?
+    ) {
+        viewModelScope.launch {
+            productState = productState.copy(isLoading = true)
+            repository.updateProduct(product, imageByteArrays, imageUris).collect { result ->
+                productState = when (result) {
+                    is ResultState.Success -> {
+                        productState.copy(
+                            isLoading = false,
+                            errorMessage = result.data,
+                            uploaded = true
+                        )
+                    }
+
+                    is ResultState.Failure -> {
+                        productState.copy(
+                            isLoading = false,
+                            errorMessage = result.msg.localizedMessage
+                        )
+                    }
+
+                    ResultState.Loading -> {
+                        productState.copy(
+                            isLoading = true,
+                            errorMessage = null
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    fun deleteProduct(productId: Long) {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isLoading = true, error = null)
+
+            repository.deleteProduct(productId).collect { result ->
+                _uiState.value = when (result) {
+                    is ResultState.Success -> {
+                        val filteredList = _uiState.value.products.filter { it.id != productId }
+                        _uiState.value.copy(
+                            products = filteredList,
+                            isLoading = false,
+                            error = result.data
+                        )
+                    }
+
+                    is ResultState.Failure -> {
+                        _uiState.value.copy(
+                            isLoading = false,
+                            error = result.msg.localizedMessage
+                        )
+                    }
+
                     ResultState.Loading -> {
                         _uiState.value.copy(
                             isLoading = true,
@@ -67,6 +155,7 @@ class StoreViewModel @Inject constructor(
             is StoreActions.SetSearchQuery -> updateSearchQuery(action.query)
             is StoreActions.ToggleDropdown -> toggleDropdown(action.expanded)
             is StoreActions.ClearSearchQuery -> clearSearchQuery()
+            is StoreActions.DeleteProduct -> deleteProduct(action.pid)
             else -> {}
         }
     }
@@ -190,6 +279,32 @@ class StoreViewModel @Inject constructor(
 
             is ProductActions.CategoryUpdated -> {
                 productState = productState.copy(selectedCategory = action.category)
+            }
+
+            is ProductActions.UpdateTheProduct -> {
+                val validationMessage = validateProductFields()
+                if (validationMessage != null) {
+                    productState = productState.copy(errorMessage = validationMessage)
+                    return
+                }
+                Log.d("CHJZAX", "Images Urls : ${action.imageUrls}")
+                productState.pid?.let { productId ->
+                    updateProduct(
+                        Product(
+                            id = productId,
+                            name = productState.productName,
+                            price = productState.price.toDouble(),
+                            description = productState.description,
+                            quantity = productState.quantity.toLong(),
+                            weightOrVolume = productState.weight.toFloat(),
+                            unit = productState.measurement,
+                            category = productState.selectedCategory,
+                            imageUrls = action.imageUrls
+                        ),
+                        imageByteArrays = action.listOfImageByteArrays,
+                        imageUris = productState.imageUris
+                    )
+                }
             }
         }
     }

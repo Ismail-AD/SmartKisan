@@ -1,7 +1,10 @@
 package com.appdev.smartkisan.data
 
+import android.os.Parcelable
+import kotlinx.parcelize.Parcelize
 import kotlinx.serialization.Serializable
 
+@Parcelize
 @Serializable
 data class Product(
     var id: Long = 0L,
@@ -18,4 +21,4 @@ data class Product(
     var weightOrVolume: Float,
     var updateTime: String = "",
     var unit: String? = ""
-)
+) : Parcelable

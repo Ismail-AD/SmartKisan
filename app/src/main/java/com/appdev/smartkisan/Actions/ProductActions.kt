@@ -13,6 +13,7 @@ sealed interface ProductActions {
     data class CategoryUpdated(val category: String) : ProductActions
     data class RemoveImage(val index: Int) : ProductActions
     data class AddToStore(val listOfImageByteArrays: List<ByteArray?>) : ProductActions
+    data class UpdateTheProduct(val listOfImageByteArrays: List<ByteArray?>?,val imageUrls:List<String>) : ProductActions
     data object GoBack : ProductActions
     data object ClearValidationError : ProductActions
 
