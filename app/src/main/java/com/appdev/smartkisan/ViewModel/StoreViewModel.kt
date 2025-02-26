@@ -156,8 +156,15 @@ class StoreViewModel @Inject constructor(
             is StoreActions.ToggleDropdown -> toggleDropdown(action.expanded)
             is StoreActions.ClearSearchQuery -> clearSearchQuery()
             is StoreActions.DeleteProduct -> deleteProduct(action.pid)
+            is StoreActions.ClearValidationError -> clearMessage()
             else -> {}
         }
+    }
+
+    private fun clearMessage() {
+        _uiState.value = _uiState.value.copy(
+            error = null
+        )
     }
 
     private fun updateCategory(category: String) {

@@ -51,6 +51,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import androidx.navigation.navArgument
+import com.appdev.smartkisan.Actions.ProductActions
 import com.appdev.smartkisan.Actions.StoreActions
 import com.appdev.smartkisan.R
 import com.appdev.smartkisan.States.StoreUiState
@@ -255,6 +256,8 @@ fun StoreManagementScreen(
 
                     uiState.error != null -> {
                         Toast.makeText(context, uiState.error, Toast.LENGTH_SHORT).show()
+                        onStoreAction.invoke(StoreActions.ClearValidationError)
+
                     }
 
                     uiState.products.isEmpty() -> {

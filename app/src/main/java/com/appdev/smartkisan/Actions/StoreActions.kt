@@ -12,4 +12,6 @@ sealed interface StoreActions {
     data class NavigateToProductDetail(val product: Product) : StoreActions
     data object NavigateBack : StoreActions
     data class DeleteProduct(val pid:Long) : StoreActions
+    data object ClearValidationError : StoreActions
+
 }
