@@ -1,5 +1,6 @@
 package com.appdev.smartkisan.ui.MainAppScreens
 
+import android.net.Uri
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -24,6 +25,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
@@ -36,45 +38,55 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
+import com.appdev.smartkisan.Actions.MarketplaceActions
 import com.appdev.smartkisan.R
+import com.appdev.smartkisan.States.MarketplaceUiState
+import com.appdev.smartkisan.ViewModel.MarketplaceViewModel
 import com.appdev.smartkisan.data.Category
 import com.appdev.smartkisan.data.Product
+import com.appdev.smartkisan.ui.OtherComponents.CustomLoader
 import com.appdev.smartkisan.ui.OtherComponents.SingleCrop
 import com.appdev.smartkisan.ui.navigation.Routes
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
+
+
+@Composable
+fun MarketPlaceRoot(
+    controller: NavHostController,
+    marketplaceViewModel: MarketplaceViewModel = hiltViewModel()
+) {
+    val marketplaceState by marketplaceViewModel.marketplaceUiState.collectAsStateWithLifecycle()
+
+    LaunchedEffect(Unit) {
+        marketplaceViewModel.onMarketplaceAction(MarketplaceActions.LoadProductsForUser)
+    }
+
+    MarketPlaceScreen(
+        uiState = marketplaceState,
+        onMarketplaceAction = { action ->
+            when (action) {
+                is MarketplaceActions.NavigateToProductDetail -> {
+                    val productJson = Uri.encode(Json.encodeToString(action.product))
+                    controller.navigate(Routes.ProductDetailScreen.route + "/$productJson")
+                }
+
+                else -> marketplaceViewModel.onMarketplaceAction(action)
+            }
+        }
+    )
+}
 
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MarketPlace(controller: NavHostController) {
-    var categories =
-        listOf(
-            Category("Seeds", R.drawable.seed),
-            Category("Fertilizers", R.drawable.fertlizers),
-            Category("Medicine", R.drawable.herbal)
-        )
-
-    val productList = listOf(
-        Product(
-            id = 1L,
-            creatorId = "user123",
-            name = "Herbal Medicine for Plants",
-            price = 400.0,
-            discountPrice = 350.0,
-            imageUrls = listOf("https://example.com/seeds.jpg"),
-            ratings = 4.7f,
-            reviewsCount = 85L,
-            description = "This herbal plant medicine is specially formulated to enhance growth and protect your plants from common diseases...",
-            quantity = 10L,
-            weightOrVolume = 10.0f,
-            updateTime = "2025-02-23T12:00:00Z",
-            unit = "g"
-        )
-    )
-    var selected by remember {
-        mutableIntStateOf(0)
-    }
-
+fun MarketPlaceScreen(
+    uiState: MarketplaceUiState,
+    onMarketplaceAction: (MarketplaceActions) -> Unit
+) {
     Scaffold(topBar = {
         TopAppBar(title = {
             Row(
@@ -104,10 +116,12 @@ fun MarketPlace(controller: NavHostController) {
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 LazyRow {
-                    itemsIndexed(categories) { index, category ->
+                    itemsIndexed(uiState.categories) { index, category ->
                         FilterChip(
-                            selected = selected == index,
-                            onClick = { selected = index },
+                            selected = uiState.selectedCategory == category.name,
+                            onClick = {
+                                onMarketplaceAction(MarketplaceActions.SelectCategory(category = category.name))
+                            },
                             label = {
                                 Text(
                                     text = category.name,
@@ -116,7 +130,10 @@ fun MarketPlace(controller: NavHostController) {
                                         top = 12.dp,
                                         bottom = 12.dp
                                     ),
-                                    color = if (selected == index) Color.White else MaterialTheme.colorScheme.onBackground
+                                    color = when (uiState.selectedCategory) {
+                                        category.name -> Color.White
+                                        else -> MaterialTheme.colorScheme.onBackground
+                                    }
                                 )
                             },
                             leadingIcon = {
@@ -139,15 +156,55 @@ fun MarketPlace(controller: NavHostController) {
                         )
                     }
                 }
-                LazyVerticalGrid(
-                    columns = GridCells.Fixed(2),
-                    modifier = Modifier.padding(top = 15.dp),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp),
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    items(productList) {
-                        SingleCrop(it) {
-                            controller.navigate(Routes.ProductDetailScreen.route)
+
+                when {
+                    uiState.isLoading -> {
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            CustomLoader()
+                        }
+                    }
+
+                    uiState.error != null -> {
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(uiState.error)
+                            onMarketplaceAction.invoke(MarketplaceActions.ClearValidationError)
+                        }
+                    }
+
+                    uiState.filteredProducts.isEmpty() -> {
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                "No products found!",
+                                color = MaterialTheme.colorScheme.onBackground
+                            )
+                        }
+                    }
+
+                    else -> {
+                        LazyVerticalGrid(
+                            columns = GridCells.Fixed(2),
+                            modifier = Modifier.padding(top = 15.dp),
+                            horizontalArrangement = Arrangement.spacedBy(10.dp),
+                            verticalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            items(uiState.filteredProducts) { product ->
+                                SingleCrop(product) {
+                                    onMarketplaceAction(
+                                        MarketplaceActions.NavigateToProductDetail(
+                                            product = product
+                                        )
+                                    )
+                                }
+                            }
                         }
                     }
                 }

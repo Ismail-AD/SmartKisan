@@ -1,5 +1,6 @@
 package com.appdev.smartkisan.ui.MainAppScreens
 
+import android.net.Uri
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
@@ -71,6 +72,7 @@ import com.appdev.smartkisan.data.Product
 import com.appdev.smartkisan.ui.navigation.Routes
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.hazeChild
+import kotlinx.serialization.json.Json
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -80,7 +82,7 @@ fun BaseScreen() {
 
     val currentRoute = controller.currentBackStackEntryAsState().value?.destination?.route
     val hideBottomBarRoutes = listOf(
-        Routes.ProductDetailScreen.route, Routes.DiagnosisResult.route,
+        Routes.ProductDetailScreen.route + "/{productJson}", Routes.DiagnosisResult.route,
         Routes.ChatBotScreen.route
     )
 
@@ -135,15 +137,22 @@ fun BaseScreen() {
             composable(Routes.HomeScreen.route) { Home(controller) }
             composable(Routes.ChatBotScreen.route) { ChatBotScreen(controller) }
             composable(Routes.AccountScreen.route) { Account() }
-            composable(Routes.MarketPlace.route) { MarketPlace(controller) }
+            composable(Routes.MarketPlace.route) { MarketPlaceRoot(controller) }
             composable(Routes.PlantDisease.route) { PlantDisease(controller) }
             composable(Routes.DiagnosisResult.route) { DiagnosisResult(controller) }
-            composable(route = Routes.ProductDetailScreen.route + "/{product}", arguments = listOf(
-                navArgument("product") {
-                    type = NavType.ParcelableType(Product::class.java)
+            composable(route = Routes.ProductDetailScreen.route + "/{productJson}",
+                arguments = listOf(
+                    navArgument("productJson") {
+                        type = NavType.StringType
+                    }
+                )
+            ) { backStackEntry ->
+                val productJson = backStackEntry.arguments?.getString("productJson") ?: ""
+                val product = try {
+                    Json.decodeFromString<Product>(Uri.decode(productJson))
+                } catch (e: Exception) {
+                    null
                 }
-            )) { backStackEntry ->
-                val product = backStackEntry.arguments?.getParcelable<Product>("product")
                 if (product != null) {
                     ProductDetails(product = product, controller = controller)
                 }

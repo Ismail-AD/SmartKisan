@@ -8,16 +8,14 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.appdev.smartkisan.Actions.ProductActions
-import com.appdev.smartkisan.Actions.StoreActions
+import com.appdev.smartkisan.Actions.SellerStoreActions
 import com.appdev.smartkisan.Repository.Repository
 import com.appdev.smartkisan.States.ProductState
 import com.appdev.smartkisan.States.StoreUiState
-import com.appdev.smartkisan.Utils.Functions
 import com.appdev.smartkisan.Utils.ResultState
 import com.appdev.smartkisan.data.Product
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -49,6 +47,7 @@ class StoreViewModel @Inject constructor(
         )
     }
 
+
     private fun fetchProducts() {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true, error = null)
@@ -58,6 +57,7 @@ class StoreViewModel @Inject constructor(
                     is ResultState.Success -> {
                         _uiState.value.copy(
                             products = result.data,
+                            filteredProducts = result.data,
                             isLoading = false,
                             error = null
                         )
@@ -122,9 +122,11 @@ class StoreViewModel @Inject constructor(
             repository.deleteProduct(productId).collect { result ->
                 _uiState.value = when (result) {
                     is ResultState.Success -> {
-                        val filteredList = _uiState.value.products.filter { it.id != productId }
+                        val updatedProductList =
+                            _uiState.value.products.filter { it.id != productId }
                         _uiState.value.copy(
-                            products = filteredList,
+                            products = updatedProductList,
+                            filteredProducts = updatedProductList,
                             isLoading = false,
                             error = result.data
                         )
@@ -148,15 +150,15 @@ class StoreViewModel @Inject constructor(
         }
     }
 
-    fun onStoreAction(action: StoreActions) {
+    fun onStoreAction(action: SellerStoreActions) {
         when (action) {
-            is StoreActions.LoadProducts -> fetchProducts()
-            is StoreActions.SelectCategory -> updateCategory(action.category)
-            is StoreActions.SetSearchQuery -> updateSearchQuery(action.query)
-            is StoreActions.ToggleDropdown -> toggleDropdown(action.expanded)
-            is StoreActions.ClearSearchQuery -> clearSearchQuery()
-            is StoreActions.DeleteProduct -> deleteProduct(action.pid)
-            is StoreActions.ClearValidationError -> clearMessage()
+            is SellerStoreActions.LoadProductsForAdmin-> fetchProducts()
+            is SellerStoreActions.SelectCategory -> updateCategory(action.category)
+            is SellerStoreActions.SetSearchQuery -> updateSearchQuery(action.query)
+            is SellerStoreActions.ToggleDropdown -> toggleDropdown(action.expanded)
+            is SellerStoreActions.ClearSearchQuery -> clearSearchQuery()
+            is SellerStoreActions.DeleteProduct -> deleteProduct(action.pid)
+            is SellerStoreActions.ClearValidationError -> clearMessage()
             else -> {}
         }
     }

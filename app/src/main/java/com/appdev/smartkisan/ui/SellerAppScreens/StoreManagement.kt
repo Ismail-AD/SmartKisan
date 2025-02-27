@@ -50,9 +50,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
-import androidx.navigation.navArgument
-import com.appdev.smartkisan.Actions.ProductActions
-import com.appdev.smartkisan.Actions.StoreActions
+import com.appdev.smartkisan.Actions.SellerStoreActions
 import com.appdev.smartkisan.R
 import com.appdev.smartkisan.States.StoreUiState
 import com.appdev.smartkisan.ViewModel.StoreViewModel
@@ -72,11 +70,11 @@ fun StoreManagementRoot(
 ) {
     val productListState by storeViewModel.storeUiState.collectAsStateWithLifecycle()
     LaunchedEffect(Unit) {
-        storeViewModel.onStoreAction(StoreActions.LoadProducts)
+        storeViewModel.onStoreAction(SellerStoreActions.LoadProductsForAdmin)
     }
     StoreManagementScreen(productListState, onStoreAction = { action ->
         when (action) {
-            is StoreActions.NavigateToAddProduct -> {
+            is SellerStoreActions.NavigateToAddProduct -> {
                 val route = if (action.product != null) {
                     val productJson = Uri.encode(Json.encodeToString(action.product))
                     Routes.AddProductScreen.route + "/$productJson"
@@ -86,12 +84,12 @@ fun StoreManagementRoot(
                 navHostController.navigate(route)
             }
 
-            is StoreActions.NavigateToProductDetail -> {
+            is SellerStoreActions.NavigateToProductDetail -> {
                 val productJson = Uri.encode(Json.encodeToString(action.product))
                 navHostController.navigate(Routes.ProductDetailScreen.route + "/$productJson")
             }
 
-            is StoreActions.NavigateBack -> {
+            is SellerStoreActions.NavigateBack -> {
                 navHostController.navigateUp()
             }
 
@@ -105,7 +103,7 @@ fun StoreManagementRoot(
 @Composable
 fun StoreManagementScreen(
     uiState: StoreUiState,
-    onStoreAction: (StoreActions) -> Unit
+    onStoreAction: (SellerStoreActions) -> Unit
 ) {
     val focusManager = LocalFocusManager.current
     val context = LocalContext.current
@@ -124,7 +122,7 @@ fun StoreManagementScreen(
                 },
                 navigationIcon = {
                     IconButton(onClick = {
-                        onStoreAction(StoreActions.NavigateBack)
+                        onStoreAction(SellerStoreActions.NavigateBack)
                     }) {
                         Icon(
                             painter = painterResource(id = R.drawable.arrow),
@@ -138,7 +136,7 @@ fun StoreManagementScreen(
         },
         floatingActionButton = {
             FloatingActionButton(
-                onClick = { onStoreAction(StoreActions.NavigateToAddProduct(null)) },
+                onClick = { onStoreAction(SellerStoreActions.NavigateToAddProduct(null)) },
                 containerColor = myGreen,
                 contentColor = Color.White
             ) {
@@ -168,11 +166,11 @@ fun StoreManagementScreen(
                     modifier = Modifier.fillMaxWidth(),
                     onFocusChange = { },
                     onTextChange = { text ->
-                        onStoreAction(StoreActions.SetSearchQuery(text))
+                        onStoreAction(SellerStoreActions.SetSearchQuery(text))
                     },
                     onBackClick = {
                         focusManager.clearFocus()
-                        onStoreAction(StoreActions.ClearSearchQuery)
+                        onStoreAction(SellerStoreActions.ClearSearchQuery)
                     }
                 )
 
@@ -180,7 +178,7 @@ fun StoreManagementScreen(
                 ExposedDropdownMenuBox(
                     expanded = uiState.isDropdownExpanded,
                     onExpandedChange = {
-                        onStoreAction(StoreActions.ToggleDropdown(it))
+                        onStoreAction(SellerStoreActions.ToggleDropdown(it))
                     },
                     modifier = Modifier
                         .padding(top = 10.dp)
@@ -210,7 +208,7 @@ fun StoreManagementScreen(
                     ExposedDropdownMenu(
                         expanded = uiState.isDropdownExpanded,
                         onDismissRequest = {
-                            onStoreAction(StoreActions.ToggleDropdown(false))
+                            onStoreAction(SellerStoreActions.ToggleDropdown(false))
                         },
                         shape = RoundedCornerShape(5.dp),
                         containerColor = MaterialTheme.colorScheme.background,
@@ -228,7 +226,7 @@ fun StoreManagementScreen(
                                     )
                                 },
                                 onClick = {
-                                    onStoreAction(StoreActions.SelectCategory(category))
+                                    onStoreAction(SellerStoreActions.SelectCategory(category))
                                 },
                                 modifier = Modifier.background(
                                     if (uiState.selectedCategory == category)
@@ -256,7 +254,7 @@ fun StoreManagementScreen(
 
                     uiState.error != null -> {
                         Toast.makeText(context, uiState.error, Toast.LENGTH_SHORT).show()
-                        onStoreAction.invoke(StoreActions.ClearValidationError)
+                        onStoreAction.invoke(SellerStoreActions.ClearValidationError)
 
                     }
 
@@ -274,7 +272,7 @@ fun StoreManagementScreen(
                     }
 
                     else -> {
-                        val filteredProducts = uiState.products.filter { product ->
+                        val filteredProducts = uiState.filteredProducts.filter { product ->
                             val matchesCategory = uiState.selectedCategory == "All" ||
                                     product.category.contains(
                                         uiState.selectedCategory,
@@ -292,12 +290,12 @@ fun StoreManagementScreen(
                         ) {
                             itemsIndexed(filteredProducts) { index, product ->
                                 ExpandedItem(context, product, onDelete = {
-                                    onStoreAction.invoke(StoreActions.DeleteProduct(it))
+                                    onStoreAction.invoke(SellerStoreActions.DeleteProduct(it))
                                 }, onUpdate = {
-                                    onStoreAction.invoke(StoreActions.NavigateToAddProduct(it))
+                                    onStoreAction.invoke(SellerStoreActions.NavigateToAddProduct(it))
                                 }) {
                                     onStoreAction.invoke(
-                                        StoreActions.NavigateToProductDetail(
+                                        SellerStoreActions.NavigateToProductDetail(
                                             product
                                         )
                                     )

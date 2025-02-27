@@ -34,6 +34,19 @@ class Repository @Inject constructor(
     private val productImageFolderPath = "public/cel5c7_0"
 
 
+    fun getAllProducts(): Flow<ResultState<List<Product>>> = flow {
+        getCurrentUserId()?.let { uid ->
+            emit(ResultState.Loading)
+            try {
+                val listOfProducts = supabaseClient.from("products").select().decodeList<Product>()
+                emit(ResultState.Success(listOfProducts))
+            } catch (e: Exception) {
+                Log.e("SupabaseRepository", "Product retrieval failed: ${e.message}", e)
+                emit(ResultState.Failure(e))
+            }
+        }
+    }
+
     fun getProducts(): Flow<ResultState<List<Product>>> = flow {
         getCurrentUserId()?.let { uid ->
             emit(ResultState.Loading)
