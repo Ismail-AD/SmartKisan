@@ -1,5 +1,6 @@
 package com.appdev.smartkisan.ui.OtherComponents
 
+import android.content.Context
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -33,12 +34,15 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil3.compose.AsyncImage
+import coil3.request.ImageRequest
+import coil3.request.crossfade
 import com.appdev.smartkisan.R
 import com.appdev.smartkisan.data.Product
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SingleCrop(product: Product,modifier: Modifier = Modifier, onClick: () -> Unit) {
+fun SingleCrop(product: Product,context:Context,modifier: Modifier = Modifier, onClick: () -> Unit) {
 
     Card(
         onClick = onClick,
@@ -58,13 +62,18 @@ fun SingleCrop(product: Product,modifier: Modifier = Modifier, onClick: () -> Un
                     .padding(start = 7.dp, top = 7.dp, end = 7.dp)
                     .fillMaxWidth()
             ) {
-                Image(
-                    painter = painterResource(id = R.drawable.seedsnew),
-                    contentDescription = "",
+                AsyncImage(
+                    model = ImageRequest.Builder(context)
+                        .data(product.imageUrls.firstOrNull())
+                        .crossfade(true)
+                        .build(),
+                    contentDescription = "Product first Image",
+                    placeholder = painterResource(R.drawable.placholder),
+                    error = painterResource(R.drawable.placholder),
+                    contentScale = ContentScale.Crop,
                     modifier = Modifier
                         .fillMaxSize()
-                        .clip(RoundedCornerShape(6.dp)),
-                    contentScale = ContentScale.Crop
+                        .clip(RoundedCornerShape(6.dp))
                 )
             }
 

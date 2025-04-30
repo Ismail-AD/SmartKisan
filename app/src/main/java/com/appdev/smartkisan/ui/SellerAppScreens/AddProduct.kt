@@ -101,8 +101,8 @@ fun AddProductScreen(productState: ProductState, onAction: (ProductActions) -> U
     var showToastState by remember { mutableStateOf(Pair(false, "")) }
     LaunchedEffect(productState.errorMessage) {
         productState.errorMessage?.let { error ->
-            showToastState = Pair(true, error)
-            onAction.invoke(ProductActions.ClearValidationError)
+            Toast.makeText(context, error, Toast.LENGTH_SHORT).show()
+            onAction(ProductActions.ClearValidationError)
         }
     }
     LaunchedEffect(key1 = productState.uploaded) {

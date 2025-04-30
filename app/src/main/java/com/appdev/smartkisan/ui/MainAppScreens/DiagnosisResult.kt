@@ -37,6 +37,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -67,6 +68,7 @@ fun DiagnosisResult(
         )
     )
 ) {
+    val context = LocalContext.current
     val productList = listOf(
         Product(
             id = 1L,
@@ -279,7 +281,7 @@ fun DiagnosisResult(
                     verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     items(productList) { product ->
-                        SingleCrop(product) {
+                        SingleCrop(product,context) {
                             controller.navigate(Routes.ProductDetailScreen.route)
                         }
                     }

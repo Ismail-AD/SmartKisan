@@ -48,6 +48,7 @@ import com.appdev.smartkisan.ui.OtherComponents.SearchField
 import com.appdev.smartkisan.ui.navigation.Routes
 import com.appdev.smartkisan.ui.theme.SmartKisanTheme
 
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SellerChatScreen(controller: NavHostController, onSearchFocusChange: (Boolean) -> Unit) {
@@ -133,7 +134,7 @@ fun SellerChatScreen(controller: NavHostController, onSearchFocusChange: (Boolea
                 ) {
                     itemsIndexed(
                         chatData,
-                        key = { _, eachContact -> eachContact.userid!! }
+                        key = { _, eachContact -> eachContact.partnerId!! }
                     ) { index, eachContact ->
                         Column {
                             ListRowData(
@@ -164,7 +165,7 @@ fun ListRowData(chatMateData: ChatMateData, onClick: () -> Unit) {
             }) {
         AsyncImage(
             model = ImageRequest.Builder(LocalContext.current)
-                .data(null).build(),
+                .data(chatMateData.receiverImage).build(),
             error = painterResource(R.drawable.farmer),
             placeholder = painterResource(R.drawable.farmer),
             contentDescription = "pImage",
@@ -179,105 +180,38 @@ fun ListRowData(chatMateData: ChatMateData, onClick: () -> Unit) {
             verticalArrangement = Arrangement.spacedBy(2.dp),
             modifier = Modifier.fillMaxWidth(0.7f)
         ) {
-            chatMateData.username?.let {
-                Text(
-                    text = it,
-                    fontSize = 17.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = Color.Black
-                )
-            }
-            chatMateData.lastMsg?.let {
-                Text(
-                    text = it,
-                    fontSize = 14.sp,
-                    color = Color.Gray, maxLines = 1, overflow = TextOverflow.Ellipsis
-                )
-            }
-        }
-
-        if (chatMateData.chatTime!! > 0) {
             Text(
-                text = toConvertTime(chatMateData.chatTime),
-                fontSize = 13.sp,
-                color = Color.Gray, modifier = Modifier.weight(1f)
+                text = chatMateData.receiverName,
+                fontSize = 17.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onBackground
             )
+
+            Text(
+                text = chatMateData.lastMessage ?: "",
+                fontSize = 14.sp,
+                color = MaterialTheme.colorScheme.onBackground,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+
         }
+        Text(
+            text = toConvertTime(chatMateData.lastMessageTime ?: 0L),
+            fontSize = 13.sp,
+            color = MaterialTheme.colorScheme.onBackground, modifier = Modifier.weight(1f)
+        )
     }
 }
 
 fun getDummyChatData(): List<ChatMateData> {
     return listOf(
         ChatMateData(
-            username = "Alice",
-            userid = "1",
-            userContact = "+123456789",
-            lastMsg = "Hey, how are you? i am under the water",
-            chatTime = System.currentTimeMillis() - 60000
+            receiverName = "Alice",
+            partnerId = "1",
+            lastMessage = "Hey, how are you? i am under the water",
+            lastMessageTime = System.currentTimeMillis() - 60000
         ),
-        ChatMateData(
-            username = "Bob",
-            userid = "2",
-            userContact = "+987654321",
-            lastMsg = "See you tomorrow.",
-            chatTime = System.currentTimeMillis() - 120000
-        ),
-        ChatMateData(
-            username = "Charlie",
-            userid = "3",
-            userContact = "+192837465",
-            lastMsg = "Let's catch up later!",
-            chatTime = System.currentTimeMillis() - 3600000
-        ),
-        ChatMateData(
-            username = "Diana",
-            userid = "4",
-            userContact = "+1122334455",
-            lastMsg = "Meeting at 5 PM?",
-            chatTime = System.currentTimeMillis() - 7200000
-        ),
-        ChatMateData(
-            username = "Eve",
-            userid = "5",
-            userContact = "+5566778899",
-            lastMsg = "Got your message.",
-            chatTime = System.currentTimeMillis() - 14400000
-        ),
-        ChatMateData(
-            username = "Frank",
-            userid = "6",
-            userContact = "+9988776655",
-            lastMsg = "Thanks for the update!",
-            chatTime = System.currentTimeMillis() - 28800000
-        ),
-        ChatMateData(
-            username = "Grace",
-            userid = "7",
-            userContact = "+5544332211",
-            lastMsg = "Can you call me?",
-            chatTime = System.currentTimeMillis() - 86400000
-        ),
-        ChatMateData(
-            username = "Henry",
-            userid = "8",
-            userContact = "+6677889900",
-            lastMsg = "Check your email.",
-            chatTime = System.currentTimeMillis() - 172800000
-        ),
-        ChatMateData(
-            username = "Ivy",
-            userid = "9",
-            userContact = "+2233445566",
-            lastMsg = "Happy birthday!",
-            chatTime = System.currentTimeMillis() - 259200000
-        ),
-        ChatMateData(
-            username = "Jake",
-            userid = "10",
-            userContact = "+3344556677",
-            lastMsg = "Good night!",
-            chatTime = System.currentTimeMillis() - 345600000
-        )
     )
 }
 

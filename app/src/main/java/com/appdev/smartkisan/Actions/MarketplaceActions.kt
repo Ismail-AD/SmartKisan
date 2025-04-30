@@ -2,7 +2,7 @@ package com.appdev.smartkisan.Actions
 
 import com.appdev.smartkisan.data.Product
 
-interface MarketplaceActions {
+sealed interface MarketplaceActions {
     data object LoadProductsForUser : MarketplaceActions
     data class SelectCategory(val category: String) : MarketplaceActions
     data class SetSearchQuery(val query: String) : MarketplaceActions

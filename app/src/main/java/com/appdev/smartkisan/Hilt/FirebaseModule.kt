@@ -3,6 +3,8 @@ package com.appdev.smartkisan.Hilt
 import com.google.firebase.Firebase
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.auth
+import com.google.firebase.database.FirebaseDatabase
+import com.google.firebase.database.database
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -16,5 +18,8 @@ class FirebaseModule {
     @Singleton
     @Provides
     fun firebaseAuthInstance(): FirebaseAuth = Firebase.auth
+    @Singleton
+    @Provides
+    fun fireBaseDBInstance(): FirebaseDatabase = Firebase.database
 
 }

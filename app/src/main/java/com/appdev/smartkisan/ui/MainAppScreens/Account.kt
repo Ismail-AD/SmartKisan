@@ -1,6 +1,5 @@
 package com.appdev.smartkisan.ui.MainAppScreens
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -21,7 +20,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
-import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -39,29 +37,54 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavHostController
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
+import com.appdev.smartkisan.Actions.AccountActions
 import com.appdev.smartkisan.R
 import com.appdev.smartkisan.data.SettingOption
 import com.appdev.smartkisan.ui.OtherComponents.CustomButton
+import com.appdev.smartkisan.ui.navigation.Routes
+
+
+@Composable
+fun AccountRoot(
+    controller: NavHostController,
+) {
+    Account { action ->
+        when (action) {
+            is AccountActions.GoToChats -> {
+                controller.navigate(Routes.UserChatListScreen.route)
+            }
+
+            else -> {
+
+            }
+        }
+    }
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun Account() {
+fun Account(onAction: (AccountActions) -> Unit) {
     val listOfOptions by remember {
         mutableStateOf(
             listOf(
-                SettingOption("Edit Profile", R.drawable.edit_text_new_, onClick = {}),
-                SettingOption("Saved Products", R.drawable.save_, onClick = {}),
-                SettingOption("Chat", R.drawable.chat, onClick = {}),
+                SettingOption("Edit Profile", R.drawable.edit_text_new_, onClick = {
+
+                }),
+                SettingOption("Saved Products", R.drawable.save_, onClick = {
+
+                }),
+                SettingOption("Chat", R.drawable.chat, onClick = {
+                    onAction.invoke(AccountActions.GoToChats)
+                }),
             )
         )
     }
@@ -151,7 +174,7 @@ fun Account() {
                 }
                 Spacer(modifier = Modifier.height(30.dp))
                 LazyColumn {
-                    items(listOfOptions){ item->
+                    items(listOfOptions) { item ->
                         SingleMenuItem(item.name, item.icon, onClick = item.onClick)
                     }
                 }

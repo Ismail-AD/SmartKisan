@@ -119,6 +119,11 @@ fun OtpInput(email: String, loginState: UserAuthState, onAction: (UserAuthAction
                     userEmail = session.user?.email ?: ""
                 )
             }
+            SessionManagement.saveUserName(
+                context,
+                userName = loginState.userName,
+                userImage = loginState.imageUrl
+            )
             SessionManagement.saveUserType(
                 context,
                 userType = loginState.userType
@@ -166,7 +171,7 @@ fun OtpInput(email: String, loginState: UserAuthState, onAction: (UserAuthAction
                     fontSize = 23.sp,
                     color = MaterialTheme.colorScheme.onBackground
                 )
-                Column (
+                Column(
                     modifier = Modifier.fillMaxWidth(),
                     verticalArrangement = Arrangement.spacedBy(7.dp)
                 ) {
@@ -216,7 +221,7 @@ fun OtpInput(email: String, loginState: UserAuthState, onAction: (UserAuthAction
             )
         }
         if (showToastState.first) {
-            Toast.makeText(context,showToastState.second,Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, showToastState.second, Toast.LENGTH_SHORT).show()
 //            SweetError(
 //                message = showToastState.second,
 //                duration = Toast.LENGTH_SHORT,

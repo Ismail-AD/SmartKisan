@@ -105,6 +105,7 @@ fun Login(loginState: UserAuthState, onAction: (UserAuthAction) -> Unit) {
                     userEmail = session.user?.email ?: ""
                 )
             }
+            SessionManagement.saveUserName(context, userName = loginState.userName, userImage = loginState.imageUrl)
             SessionManagement.saveUserType(
                 context,
                 userType = loginState.userType

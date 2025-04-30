@@ -14,6 +14,7 @@ sealed class Routes(val route: String) {
     object UserInfo : Routes("UserInfo_Screen")
     object ChatBotScreen : Routes("ChatBot_Screen")
     object ProductDetailScreen : Routes("ProductDetail_Screen")
+    object UserChatListScreen : Routes("UserChatList_Screen")
     object Main : Routes("Main_Screen")
     object SellerMain : Routes("SellerMain_Screen")
     object SellerHomeScreen : Routes("SellerHome_Screen")

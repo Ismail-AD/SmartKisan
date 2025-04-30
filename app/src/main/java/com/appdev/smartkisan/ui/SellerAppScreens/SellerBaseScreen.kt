@@ -1,7 +1,6 @@
 package com.appdev.smartkisan.ui.SellerAppScreens
 
 import android.net.Uri
-import android.util.Log
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
@@ -28,6 +27,7 @@ import com.appdev.smartkisan.data.Product
 import com.appdev.smartkisan.ui.MainAppScreens.BottomBarTab
 import com.appdev.smartkisan.ui.MainAppScreens.GlassmorphicBottomNavigation
 import com.appdev.smartkisan.ui.MainAppScreens.ProductDetails
+import com.appdev.smartkisan.ui.SharedScreens.InDetailChatScreen
 import com.appdev.smartkisan.ui.navigation.Routes
 import dev.chrisbanes.haze.HazeState
 import kotlinx.serialization.json.Json
@@ -93,7 +93,7 @@ fun SellerBaseScreen() {
         ) {
             composable(Routes.SellerHomeScreen.route) { SellerHomeScreen(controller) }
             composable(Routes.SellerAccountScreen.route) { SellerProfileScreen() }
-            composable(Routes.ChatInDetailScreen.route) { InDetailChatScreen(controller) }
+            composable(Routes.ChatInDetailScreen.route) {  }
             composable(Routes.StoreManagementScreen.route) {
                 StoreManagementRoot(
                     controller

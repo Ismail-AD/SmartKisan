@@ -21,7 +21,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Build
-import androidx.compose.material.icons.rounded.Email
 import androidx.compose.material.icons.rounded.Home
 import androidx.compose.material.icons.rounded.Person
 import androidx.compose.material.icons.rounded.ShoppingCart
@@ -34,10 +33,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.BlurredEdgeTreatment
@@ -45,22 +41,16 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
-import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.RoundRect
-import androidx.compose.ui.geometry.toRect
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.PathEffect
-import androidx.compose.ui.graphics.PathMeasure
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -68,7 +58,10 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.appdev.smartkisan.Actions.ChatActions
+import com.appdev.smartkisan.ViewModel.ChatMessagesViewModel
 import com.appdev.smartkisan.data.Product
+import com.appdev.smartkisan.ui.SharedScreens.ChatMessagesRoot
 import com.appdev.smartkisan.ui.navigation.Routes
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.hazeChild
@@ -83,7 +76,9 @@ fun BaseScreen() {
     val currentRoute = controller.currentBackStackEntryAsState().value?.destination?.route
     val hideBottomBarRoutes = listOf(
         Routes.ProductDetailScreen.route + "/{productJson}", Routes.DiagnosisResult.route,
-        Routes.ChatBotScreen.route
+        Routes.ChatBotScreen.route,
+        Routes.UserChatListScreen.route,
+        Routes.ChatInDetailScreen.route + "/{receiverId}/{name}/{profilePic}"
     )
 
     val selectedTabIndex = when (currentRoute) {
@@ -134,11 +129,43 @@ fun BaseScreen() {
             navController = controller, startDestination = Routes.HomeScreen.route,
             Modifier.padding(innerPadding)
         ) {
-            composable(Routes.HomeScreen.route) { Home(controller) }
-            composable(Routes.ChatBotScreen.route) { ChatBotScreen(controller) }
-            composable(Routes.AccountScreen.route) { Account() }
+            composable(Routes.HomeScreen.route) { HomeRoot(controller) }
+            composable(Routes.ChatBotScreen.route) {
+                ChatBotRoot(
+                    controller
+                )
+            }
+            composable(Routes.AccountScreen.route) {
+                AccountRoot(controller)
+            }
             composable(Routes.MarketPlace.route) { MarketPlaceRoot(controller) }
-            composable(Routes.PlantDisease.route) { PlantDisease(controller) }
+            composable(Routes.PlantDisease.route) { PlantDiseaseRoot(controller) }
+            composable(Routes.UserChatListScreen.route) { ChatListRoot(controller) }
+            composable(
+                route = Routes.ChatInDetailScreen.route + "/{receiverId}/{name}/{profilePic}",
+                arguments = listOf(
+                    navArgument("receiverId") { type = NavType.StringType },
+                    navArgument("name") { type = NavType.StringType },
+                    navArgument("profilePic") { type = NavType.StringType }
+                )
+            ) { backStackEntry ->
+                val userId = backStackEntry.arguments?.getString("receiverId") ?: ""
+                val username = backStackEntry.arguments?.getString("name") ?: ""
+                val profilePic = backStackEntry.arguments?.getString("profilePic") ?: ""
+                val chatMessagesViewModel: ChatMessagesViewModel = hiltViewModel()
+                chatMessagesViewModel.onAction(
+                    ChatActions.SetReceiverInfo(
+                        receiverId = userId,
+                        receiverName = username,
+                        receiverProfilePic = profilePic
+                    )
+                )
+                ChatMessagesRoot(
+                    controller = controller,
+                    chatMessagesViewModel
+                )
+            }
+
             composable(Routes.DiagnosisResult.route) { DiagnosisResult(controller) }
             composable(route = Routes.ProductDetailScreen.route + "/{productJson}",
                 arguments = listOf(

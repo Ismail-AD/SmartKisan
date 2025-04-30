@@ -47,6 +47,19 @@ object SessionManagement {
         }
     }
 
+    fun saveUserName(context: Context, userName: String,userImage:String?) {
+        getSharedPreferences(context).edit().apply {
+            putString("user_name", userName)
+            putString("user_image", userImage)
+            apply()
+        }
+    }
+
+    fun getUserName(context: Context): String? =
+        getSharedPreferences(context).getString("user_name", null)
+    fun getUserImage(context: Context): String? =
+        getSharedPreferences(context).getString("user_image", null)
+
     fun saveAccessToken(context: Context, accessToken: String) {
         getSharedPreferences(context).edit().apply {
             putString("access_token", accessToken)

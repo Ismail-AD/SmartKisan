@@ -20,6 +20,7 @@ data class UserAuthState(
     val userName: String = "",
     val userType: String = "Farmer",
     val profileImage: Uri? = null,
+    val imageUrl: String? = null,
     val dataSaved: Boolean = false,
     var userId: String = "",
     val userSession: UserSession? = null,

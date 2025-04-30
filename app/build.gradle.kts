@@ -1,3 +1,4 @@
+import com.android.build.api.dsl.AaptOptions
 import java.util.Properties
 
 plugins {
@@ -13,6 +14,7 @@ plugins {
 }
 
 android {
+
     namespace = "com.appdev.smartkisan"
     compileSdk = 34
 
@@ -21,6 +23,7 @@ android {
 
     val supabaseKey: String = localProperties.getProperty("supabaseKey") ?: ""
     val supabaseUrl: String = localProperties.getProperty("supabaseUrl") ?: ""
+    val geminiKey: String = localProperties.getProperty("geminikey") ?: ""
 
     defaultConfig {
         applicationId = "com.appdev.smartkisan"
@@ -28,7 +31,7 @@ android {
         targetSdk = 34
         versionCode = 1
         versionName = "1.0"
-
+        multiDexEnabled = true
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
             useSupportLibrary = true
@@ -36,6 +39,7 @@ android {
 
         buildConfigField("String", "SUPABASE_KEY", "\"$supabaseKey\"")
         buildConfigField("String", "SUPABASE_URL", "\"$supabaseUrl\"")
+        buildConfigField("String", "GEMINI_KEY", "\"$geminiKey\"")
     }
 
     buildTypes {
@@ -57,6 +61,7 @@ android {
     buildFeatures {
         compose = true
         buildConfig = true
+        mlModelBinding = true
     }
     composeOptions {
         kotlinCompilerExtensionVersion = "1.4.3"
@@ -66,9 +71,12 @@ android {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
     }
+
+
 }
 
 dependencies {
+
 
     implementation("androidx.core:core-ktx:1.9.0")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.7")
@@ -78,7 +86,14 @@ dependencies {
     implementation("androidx.compose.ui:ui-graphics")
     implementation("androidx.compose.ui:ui-tooling-preview")
     implementation("androidx.compose.material3:material3")
+    implementation("androidx.compose.material:material-icons-extended:1.6.1")
     implementation("com.google.firebase:firebase-auth:23.1.0")
+    implementation("dev.shreyaspatil.generativeai:generativeai-google:0.9.0-1.1.0")
+    implementation("com.google.firebase:firebase-firestore:25.1.2")
+    implementation("com.google.firebase:firebase-database:21.0.0")
+
+
+
     testImplementation("junit:junit:4.13.2")
     androidTestImplementation("androidx.test.ext:junit:1.2.1")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.6.1")
@@ -89,7 +104,7 @@ dependencies {
     implementation("dev.chrisbanes.haze:haze-jetpack-compose:0.4.1")
 
     implementation("io.coil-kt.coil3:coil-compose:3.0.3")
-    implementation("io.coil-kt.coil3:coil-network-okhttp:3.0.3")
+//    implementation("io.coil-kt.coil3:coil-network-okhttp:3.0.3")
     //pager
     implementation("com.google.accompanist:accompanist-pager:0.24.13-rc")
     //navigation
@@ -101,20 +116,21 @@ dependencies {
     implementation("com.google.dagger:hilt-android:2.55")
     implementation("androidx.hilt:hilt-navigation-compose:1.2.0")
 
-    implementation(platform("io.github.jan-tennert.supabase:bom:3.0.3"))
-    implementation("io.github.jan-tennert.supabase:postgrest-kt:3.0.3")
-    implementation("io.github.jan-tennert.supabase:auth-kt:3.0.3")
-    implementation("io.github.jan-tennert.supabase:realtime-kt:3.0.3")
-    implementation("io.github.jan-tennert.supabase:storage-kt:3.0.3")
-    implementation("io.ktor:ktor-client-android:3.0.2")
-
+    implementation(platform("io.github.jan-tennert.supabase:bom:3.1.1"))
+    implementation("io.github.jan-tennert.supabase:postgrest-kt:3.1.1")
+    implementation("io.github.jan-tennert.supabase:auth-kt:3.1.1")
+    implementation("io.github.jan-tennert.supabase:realtime-kt:3.1.1")
+    implementation("io.github.jan-tennert.supabase:storage-kt:3.1.1")
+    implementation("io.ktor:ktor-client-android:3.1.1")
+    implementation("io.ktor:ktor-client-okhttp:3.1.1")
+    implementation("io.ktor:ktor-client-plugins:3.1.1")
     //Room
     implementation("androidx.room:room-runtime:2.6.1")
     implementation("androidx.room:room-ktx:2.6.1")
     annotationProcessor("androidx.room:room-compiler:2.6.1")
     ksp("androidx.room:room-compiler:2.6.1")
-
-
-
+    implementation("org.tensorflow:tensorflow-lite:2.17.0")
+    implementation("org.tensorflow:tensorflow-lite-metadata:0.5.0")
+    implementation("org.tensorflow:tensorflow-lite-support:0.5.0")
 
 }

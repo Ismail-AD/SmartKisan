@@ -47,6 +47,24 @@ class Repository @Inject constructor(
         }
     }
 
+    fun getSellersProfile(): Flow<ResultState<List<UserEntity>>> = flow {
+        emit(ResultState.Loading)
+        try {
+            val response = supabaseClient
+                .from("users")
+                .select {
+                    filter {
+                        eq("role", "Seller")
+                    }
+                }.decodeList<UserEntity>()
+
+            emit(ResultState.Success(response))
+        } catch (e: Exception) {
+            Log.e("SupabaseRepository", "Failed to fetch sellers: ${e.message}", e)
+            emit(ResultState.Failure(e))
+        }
+    }
+
     fun getProducts(): Flow<ResultState<List<Product>>> = flow {
         getCurrentUserId()?.let { uid ->
             emit(ResultState.Loading)
@@ -329,7 +347,7 @@ class Repository @Inject constructor(
                     userEntity.imageUrl = imageUrl
                     userEntity.id = uid
                     supabaseClient.from("users").insert(userEntity)
-                    emit(ResultState.Success("Profile created successfully"))
+                    emit(ResultState.Success(imageUrl))
                 } catch (e: Exception) {
                     Log.e("SupabaseRepository", "Profile creation failed: ${e.message}", e)
                     emit(ResultState.Failure(e))

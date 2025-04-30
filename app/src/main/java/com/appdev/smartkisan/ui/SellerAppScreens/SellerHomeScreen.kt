@@ -65,6 +65,7 @@ import com.appdev.smartkisan.ui.theme.myGreen
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SellerHomeScreen(controller: NavHostController) {
+    val context = LocalContext.current
     var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
 
     val listOfOptions by remember {
@@ -242,7 +243,7 @@ fun SellerHomeScreen(controller: NavHostController) {
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     items(productList) { item ->
-                        SingleCrop(item, Modifier.width(180.dp)) { }
+                        SingleCrop(item, context,Modifier.width(180.dp)) { }
                     }
                 }
             }

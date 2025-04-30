@@ -1,5 +1,13 @@
 package com.appdev.smartkisan.ui.MainAppScreens
 
+import android.graphics.ImageDecoder
+import android.net.Uri
+import android.os.Build
+import android.provider.MediaStore
+import android.util.Log
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -21,22 +29,92 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.graphics.drawable.toBitmap
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
+import coil3.compose.AsyncImage
+import coil3.request.ImageRequest
+import com.appdev.smartkisan.Actions.DiseaseDetectActions
+import com.appdev.smartkisan.Actions.ProductActions
+import com.appdev.smartkisan.Actions.UserAuthAction
 import com.appdev.smartkisan.R
+import com.appdev.smartkisan.States.DiseaseDetectState
+import com.appdev.smartkisan.ViewModel.DiseaseDetectViewModel
 import com.appdev.smartkisan.ui.OtherComponents.CustomButton
+import com.appdev.smartkisan.ui.OtherComponents.CustomLoader
 import com.appdev.smartkisan.ui.navigation.Routes
+
+
+@Composable
+fun PlantDiseaseRoot(
+    controller: NavHostController,
+    diseaseDetectViewModel: DiseaseDetectViewModel = hiltViewModel()
+) {
+    PlantDisease(diseaseDetectViewModel.detectUiState) { action ->
+        when (action) {
+            is DiseaseDetectActions.GoBack -> {
+                controller.navigateUp()
+            }
+
+            else -> diseaseDetectViewModel.onAction(action)
+        }
+    }
+}
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun PlantDisease(controller: NavHostController) {
+fun PlantDisease(detectUiState: DiseaseDetectState, onAction: (DiseaseDetectActions) -> Unit) {
+
+
+    val context = LocalContext.current
+    val launcher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        if (uri != null) {
+            onAction.invoke(DiseaseDetectActions.AddSelectedImage(uri))
+            onAction.invoke(
+                DiseaseDetectActions.ExtractedBitmap(
+                    bitmap = if (Build.VERSION.SDK_INT < 28) {
+                        val inputStream = context.contentResolver.openInputStream(uri)
+                        val drawable = android.graphics.drawable.Drawable.createFromStream(
+                            inputStream,
+                            uri.toString()
+                        )
+                        inputStream?.close()
+                        drawable?.toBitmap()
+                    } else {
+                        val source = ImageDecoder.createSource(context.contentResolver, uri)
+                        ImageDecoder.decodeBitmap(source)
+                    }
+                )
+            )
+        }
+    }
+
+    LaunchedEffect(detectUiState.error) {
+        detectUiState.error?.let { error ->
+            Log.d("myerror",error)
+            Toast.makeText(context, error, Toast.LENGTH_SHORT).show()
+            onAction(DiseaseDetectActions.ClearValidationError)
+        }
+    }
+
+    LaunchedEffect(detectUiState.diagnosisResult) {
+        detectUiState.diagnosisResult?.let { error ->
+            Toast.makeText(context, error, Toast.LENGTH_SHORT).show()
+        }
+    }
 
     Scaffold(topBar = {
         TopAppBar(title = {
@@ -60,6 +138,9 @@ fun PlantDisease(controller: NavHostController) {
                 .padding(paddings),
             contentAlignment = Alignment.Center
         ) {
+            if (detectUiState.isLoading) {
+                CustomLoader()
+            }
             Column(
                 modifier = Modifier
                     .fillMaxSize()
@@ -82,8 +163,12 @@ fun PlantDisease(controller: NavHostController) {
                         color = Color(0xFF2E7D32)
                     )
                 ) {
-                    Image(
-                        painter = painterResource(id = R.drawable.placeholderdisease),
+                    AsyncImage(
+                        model = ImageRequest.Builder(LocalContext.current)
+                            .data(detectUiState.selectedImageUri)
+                            .build(),
+                        placeholder = painterResource(R.drawable.placholder),
+                        error = painterResource(R.drawable.placholder),
                         contentDescription = "", modifier = Modifier.size(200.dp)
                     )
                 }
@@ -97,10 +182,12 @@ fun PlantDisease(controller: NavHostController) {
                     text = "Import picture",
                     subtitle = "from your gallery",
                     icon = R.drawable.importgallery
-                ) {}
+                ) {
+                    launcher.launch("image/*")
+                }
                 Spacer(modifier = Modifier.height(20.dp))
                 CustomButton(onClick = {
-                    controller.navigate(Routes.DiagnosisResult.route)
+                    onAction(DiseaseDetectActions.StartDiagnosis(context))
                 }, text = "Diagnose", width = 1f)
             }
         }

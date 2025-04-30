@@ -240,7 +240,7 @@ class LoginViewModel @Inject constructor(
                             is ResultState.Failure -> loginState.copy(errorMessage = result.msg.localizedMessage,isLoading = false)
                             ResultState.Loading -> loginState.copy(isLoading = true)
                             is ResultState.Success -> {
-                                loginState.copy(dataSaved = true, isLoading = false)
+                                loginState.copy(dataSaved = true, isLoading = false, imageUrl = result.data)
                             }
                         }
                     }
@@ -309,7 +309,6 @@ class LoginViewModel @Inject constructor(
             repository.fetchUserInfo().collect { userInformation ->
                 loginState = when (userInformation) {
                     is ResultState.Failure -> {
-                        Log.d("LOGIN",userInformation.msg.localizedMessage)
                         loginState.copy(
                             isLoading = false,
                             errorMessage = userInformation.msg.localizedMessage
@@ -325,7 +324,9 @@ class LoginViewModel @Inject constructor(
                             isLoading = false,
                             loginSuccess = true,
                             userType = userInformation.data.role,
-                            errorMessage = null
+                            errorMessage = null,
+                            userName = userInformation.data.name,
+                            imageUrl = userInformation.data.imageUrl
                         )
                     }
                 }
