@@ -3,16 +3,17 @@ package com.appdev.smartkisan.ui.SellerAppScreens
 import android.net.Uri
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -21,16 +22,21 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Divider
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -38,90 +44,78 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
-import androidx.navigation.compose.rememberNavController
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
+import coil3.request.crossfade
 import com.appdev.smartkisan.R
+import com.appdev.smartkisan.Utils.SessionManagement
+import com.appdev.smartkisan.ViewModel.SellerDashboardViewModel
 import com.appdev.smartkisan.data.Product
 import com.appdev.smartkisan.data.statusCard
+import com.appdev.smartkisan.ui.OtherComponents.NoDialogLoader
 import com.appdev.smartkisan.ui.OtherComponents.SingleCrop
 import com.appdev.smartkisan.ui.navigation.Routes
-import com.appdev.smartkisan.ui.theme.SmartKisanTheme
 import com.appdev.smartkisan.ui.theme.myGreen
-
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SellerHomeScreen(controller: NavHostController) {
+fun SellerHomeScreen(
+    controller: NavHostController,
+    viewModel: SellerDashboardViewModel = hiltViewModel()
+) {
+    val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
-    var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
-
-    val listOfOptions by remember {
-        mutableStateOf(
-            listOf(
-                statusCard(name = "Products", counter = 10L),
-                statusCard(name = "Avg. Rating", counter = 5L),
-                statusCard(name = "Total Product Views", counter = 15L),
-                statusCard(name = "Products", counter = 10L),
-                statusCard(name = "Avg. Rating", counter = 5L),
-                statusCard(name = "Total Product Views", counter = 15L)
-            )
-        )
+    LaunchedEffect(Unit) {
+        viewModel.loadDashboardData()
     }
 
-    val productList = listOf(
-        Product(
-            id = 1L,
-            creatorId = "user123",
-            name = "Herbal Medicine for Plants",
-            price = 400.0,
-            discountPrice = 350.0,
-            imageUrls = listOf("https://example.com/seeds.jpg"),
-            ratings = 4.7f,
-            reviewsCount = 85L,
-            description = "This herbal plant medicine is specially formulated to enhance growth and protect your plants from common diseases...",
-            quantity = 10L,
-            weightOrVolume = 10.0f,
-            updateTime = "2025-02-23T12:00:00Z",
-            unit = "g"
-        ),
-        Product(
-            id = 2L,
-            creatorId = "user124",
-            name = "Organic Plant Booster",
-            price = 500.0,
-            discountPrice = 450.0,
-            imageUrls = listOf("https://example.com/booster.jpg"),
-            ratings = 4.5f,
-            reviewsCount = 120L,
-            description = "Organic booster improves plant immunity and soil health...",
-            quantity = 5L,
-            weightOrVolume = 15.0f,
-            updateTime = "2025-02-23T12:30:00Z",
-            unit = "ml"
-        )
-    )
-    Scaffold(topBar = {
-        TopAppBar(title = {
-            Text(
-                text = "Dashboard",
-                fontSize = 19.sp,
-                fontWeight = FontWeight.Bold
-            )
-        })
-    }) { innerPadding ->
+
+    Scaffold(
+        topBar = {
+            TopAppBar(title = {
+                Row(
+                    verticalAlignment = Alignment.Bottom,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                ) {
+                    Text(
+                        text = "Hello ${SessionManagement.getUserName(context)} \uD83D\uDC4B",
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onBackground
+                    )
+                }
+            }, actions = {
+                Box(modifier = Modifier.padding(end = 12.dp)) {
+                    AsyncImage(
+                        model = ImageRequest.Builder(context)
+                            .data(SessionManagement.getUserImage(context))
+                            .crossfade(true)
+                            .build(),
+                        contentDescription = "User Image",
+                        placeholder = painterResource(R.drawable.farmer),
+                        error = painterResource(R.drawable.farmer),
+                        modifier = Modifier
+                            .size(40.dp)
+                            .clip(CircleShape)
+                            .border(1.dp, Color.LightGray, CircleShape),
+                        contentScale = ContentScale.Crop  // Changed from FillBounds to Crop for better circle fitting
+                    )
+                }
+            }, colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent))
+        }
+    ) { innerPadding ->
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -132,43 +126,16 @@ fun SellerHomeScreen(controller: NavHostController) {
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(horizontal = 20.dp)
+                    .verticalScroll(rememberScrollState())
             ) {
-                Row(
-                    verticalAlignment = Alignment.Bottom,
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text(
-                        text = "Welcome Jamil",
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.onBackground
-                    )
-                    Box(
-                        modifier = Modifier
-                            .background(
-                                Color.LightGray, RoundedCornerShape(100.dp)
-                            )
-                            .clip(CircleShape)
-                    ) {
-                        AsyncImage(
-                            model = ImageRequest.Builder(LocalContext.current)
-                                .data(selectedImageUri)
-                                .build(),
-                            contentDescription = "Profile Image",
-                            placeholder = painterResource(R.drawable.farmer),
-                            error = painterResource(R.drawable.farmer),
-                            modifier = Modifier
-                                .size(35.dp),
-                            contentScale = ContentScale.Crop
-                        )
-                    }
-                }
+                // Status cards in horizontal row
                 Row(modifier = Modifier.horizontalScroll(rememberScrollState())) {
-                    listOfOptions.forEachIndexed { index, statusCard ->
+                    uiState.statusCards.forEachIndexed { index, statusCard ->
                         StatusCard(index, statusCard)
                     }
                 }
+
+                // Store Management card
                 Card(
                     onClick = {
                         controller.navigate(Routes.StoreManagementScreen.route)
@@ -203,7 +170,8 @@ fun SellerHomeScreen(controller: NavHostController) {
                             Text(
                                 text = "Update inventory, prices & product details",
                                 fontSize = 14.sp,
-                                color = Color.White.copy(alpha = 0.9f), lineHeight = 21.sp
+                                color = Color.White.copy(alpha = 0.9f),
+                                lineHeight = 21.sp
                             )
                         }
                         Box(
@@ -217,35 +185,107 @@ fun SellerHomeScreen(controller: NavHostController) {
                             Image(
                                 painter = painterResource(R.drawable.shops),
                                 modifier = Modifier
-                                    .size(50.dp), contentDescription = "",
+                                    .size(50.dp),
+                                contentDescription = "Store Icon",
                                 contentScale = ContentScale.Crop
                             )
                         }
                     }
                 }
+
+                // Popular Products section
                 Text(
-                    text = "Popular Products",
+                    text = "Recent Products",
                     fontSize = 19.sp,
                     fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onBackground, modifier = Modifier
-                        .padding(top = 10.dp)
+                    color = MaterialTheme.colorScheme.onBackground,
+                    modifier = Modifier.padding(top = 10.dp)
                 )
                 HorizontalDivider(
-                    modifier = Modifier
-                        .padding(top = 4.dp),
+                    modifier = Modifier.padding(top = 4.dp),
                     thickness = 2.dp,
                     color = Color.Gray.copy(alpha = 0.2f)
                 )
-                LazyRow(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 15.dp),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    items(productList) { item ->
-                        SingleCrop(item, context,Modifier.width(180.dp)) { }
+
+                // Loading state
+                if (uiState.isLoading) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(200.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        NoDialogLoader("Loading Recent Products...")
                     }
                 }
+                // Error state
+                else if (uiState.errorMessage != null) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(200.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = uiState.errorMessage!!,
+                            color = MaterialTheme.colorScheme.error,
+                            textAlign = TextAlign.Center
+                        )
+                    }
+                }
+                // Empty state
+                else if (uiState.products.isEmpty()) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(200.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Center
+                        ) {
+                            Image(
+                                painter = painterResource(R.drawable.box),
+                                contentDescription = "No Products",
+                                modifier = Modifier.size(48.dp),
+                                alpha = 0.5f
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = "No products available",
+                                fontSize = 16.sp,
+                                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = "Tap 'Store Management' to add products",
+                                fontSize = 14.sp,
+                                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.4f)
+                            )
+                        }
+                    }
+                }
+                // Products list
+                else {
+                    LazyRow(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 15.dp),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        items(uiState.products) { product ->
+                            SingleCrop(
+                                product = product,
+                                context = context,
+                                modifier = Modifier.width(180.dp)
+                            ) { }
+                        }
+                    }
+                }
+
+                // Add some bottom padding
+                Spacer(modifier = Modifier.height(24.dp))
             }
         }
     }
@@ -256,13 +296,11 @@ fun StatusCard(
     index: Int,
     statusCard: statusCard
 ) {
-
     val iconColor = getDynamicColor(index)
     val cardBackgroundColor = iconColor.copy(alpha = if (isSystemInDarkTheme()) 0.5f else 0.2f)
 
     Card(
         modifier = Modifier
-            .fillMaxWidth()
             .padding(top = 16.dp, bottom = 16.dp, end = 13.dp),
         colors = CardDefaults.cardColors(
             containerColor = cardBackgroundColor
@@ -293,13 +331,13 @@ fun StatusCard(
                 Spacer(modifier = Modifier.width(6.dp))
                 Text(
                     text = statusCard.name,
-                    fontSize = 17.sp, color = MaterialTheme.colorScheme.onBackground
+                    fontSize = 17.sp,
+                    color = MaterialTheme.colorScheme.onBackground
                 )
             }
             Text(
-                text = statusCard.counter.toString(),
+                text = if (statusCard.name == "Revenue") "₹${statusCard.counter}" else statusCard.counter.toString(),
                 style = TextStyle(
-                    color = Color.Black,
                     fontSize = 27.sp,
                     fontWeight = FontWeight.Bold
                 ),
@@ -379,22 +417,9 @@ fun randomDynamicNightColor(index: Int): Color {
     }
 }
 
-
 private fun getIconResource(iconName: String): Int {
-
     return when (iconName) {
         "Products" -> R.drawable.box
-        "Avg. Rating" -> R.drawable.star
-        "Total Product Views" -> R.drawable.visibility
         else -> R.drawable.box
-    }
-}
-
-
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreviewy() {
-    SmartKisanTheme {
-        SellerHomeScreen(controller = rememberNavController())
     }
 }

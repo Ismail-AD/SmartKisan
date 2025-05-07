@@ -24,6 +24,8 @@ android {
     val supabaseKey: String = localProperties.getProperty("supabaseKey") ?: ""
     val supabaseUrl: String = localProperties.getProperty("supabaseUrl") ?: ""
     val geminiKey: String = localProperties.getProperty("geminikey") ?: ""
+    val weatherKey: String = localProperties.getProperty("weatherkey") ?: ""
+    val newsKey: String = localProperties.getProperty("newskey") ?: ""
 
     defaultConfig {
         applicationId = "com.appdev.smartkisan"
@@ -40,6 +42,8 @@ android {
         buildConfigField("String", "SUPABASE_KEY", "\"$supabaseKey\"")
         buildConfigField("String", "SUPABASE_URL", "\"$supabaseUrl\"")
         buildConfigField("String", "GEMINI_KEY", "\"$geminiKey\"")
+        buildConfigField("String", "WEATHER_KEY", "\"$weatherKey\"")
+        buildConfigField("String", "NEWS_KEY", "\"$newsKey\"")
     }
 
     buildTypes {
@@ -62,6 +66,9 @@ android {
         compose = true
         buildConfig = true
         mlModelBinding = true
+    }
+    aaptOptions {
+        noCompress
     }
     composeOptions {
         kotlinCompilerExtensionVersion = "1.4.3"
@@ -91,7 +98,9 @@ dependencies {
     implementation("dev.shreyaspatil.generativeai:generativeai-google:0.9.0-1.1.0")
     implementation("com.google.firebase:firebase-firestore:25.1.2")
     implementation("com.google.firebase:firebase-database:21.0.0")
-
+    implementation("com.squareup.retrofit2:retrofit:2.9.0")
+    implementation("com.squareup.retrofit2:converter-gson:2.9.0")
+    implementation("com.google.android.gms:play-services-location:21.3.0")
 
 
     testImplementation("junit:junit:4.13.2")
@@ -104,13 +113,14 @@ dependencies {
     implementation("dev.chrisbanes.haze:haze-jetpack-compose:0.4.1")
 
     implementation("io.coil-kt.coil3:coil-compose:3.0.3")
-//    implementation("io.coil-kt.coil3:coil-network-okhttp:3.0.3")
+    implementation("io.coil-kt.coil3:coil-network-okhttp:3.0.3")
     //pager
     implementation("com.google.accompanist:accompanist-pager:0.24.13-rc")
     //navigation
     implementation("androidx.navigation:navigation-compose:2.8.4")
     implementation("com.github.tfaki:ComposableSweetToast:1.0.1")
 
+    implementation("com.airbnb.android:lottie-compose:6.1.0")
     // hilt
     kapt("com.google.dagger:hilt-android-compiler:2.55")
     implementation("com.google.dagger:hilt-android:2.55")
@@ -132,5 +142,8 @@ dependencies {
     implementation("org.tensorflow:tensorflow-lite:2.17.0")
     implementation("org.tensorflow:tensorflow-lite-metadata:0.5.0")
     implementation("org.tensorflow:tensorflow-lite-support:0.5.0")
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
+    implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
+    implementation("com.google.accompanist:accompanist-permissions:0.34.0")
 
 }

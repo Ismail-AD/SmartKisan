@@ -34,6 +34,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -112,7 +113,7 @@ fun StoreManagementScreen(
             TopAppBar(
                 title = {
                     Text(
-                        text = "Saad's Inventory",
+                        text = "Inventory",
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Bold,
                         letterSpacing = 0.sp,
@@ -131,7 +132,8 @@ fun StoreManagementScreen(
                             modifier = Modifier.size(23.dp)
                         )
                     }
-                }
+                },                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
+
             )
         },
         floatingActionButton = {

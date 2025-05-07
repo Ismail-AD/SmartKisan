@@ -28,6 +28,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
@@ -129,7 +130,7 @@ fun PlantDisease(detectUiState: DiseaseDetectState, onAction: (DiseaseDetectActi
                 )
                 Text(text = "Disease Detection", fontSize = 19.sp, fontWeight = FontWeight.Bold)
             }
-        }, modifier = Modifier.shadow(2.dp))
+        },colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent))
     }) { paddings ->
         Box(
             modifier = Modifier

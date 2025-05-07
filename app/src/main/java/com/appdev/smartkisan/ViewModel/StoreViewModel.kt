@@ -41,6 +41,10 @@ class StoreViewModel @Inject constructor(
             weight = product.weightOrVolume.toString(),
             measurement = product.unit ?: "",
             selectedCategory = product.category,
+            // Initialize category-specific attributes
+            selectedApplicationMethod = product.applicationMethod ?: "Spray",
+            selectedPlantingSeason = product.plantingSeason?.firstOrNull() ?: "Spring",
+            diseases = product.targetPestsOrDiseases ?: listOf(""),
             imageUris = product.imageUrls.map { Uri.parse(it) },
             initialUris = product.imageUrls.map { Uri.parse(it) },
             imageURLS = product.imageUrls
@@ -152,6 +156,7 @@ class StoreViewModel @Inject constructor(
 
     fun onStoreAction(action: SellerStoreActions) {
         when (action) {
+
             is SellerStoreActions.LoadProductsForAdmin-> fetchProducts()
             is SellerStoreActions.SelectCategory -> updateCategory(action.category)
             is SellerStoreActions.SetSearchQuery -> updateSearchQuery(action.query)
@@ -190,6 +195,56 @@ class StoreViewModel @Inject constructor(
 
     fun onAction(action: ProductActions) {
         when (action) {
+            is ProductActions.CategoryUpdated -> {
+                // Reset category-specific fields when category changes
+                productState = when (action.category) {
+                    "Seeds" -> productState.copy(
+                        selectedCategory = action.category,
+                        selectedPlantingSeason = "Spring"
+                    )
+                    "Fertilizers" -> productState.copy(
+                        selectedCategory = action.category,
+                        selectedApplicationMethod = "Spray"
+                    )
+                    "Medicine" -> productState.copy(
+                        selectedCategory = action.category,
+                        diseases = listOf(""),
+                    )
+                    else -> productState.copy(selectedCategory = action.category)
+                }
+            }
+
+            // New action handlers
+            is ProductActions.ApplicationMethodUpdated -> {
+                productState = productState.copy(selectedApplicationMethod = action.method)
+            }
+
+            is ProductActions.PlantingSeasonUpdated -> {
+                productState = productState.copy(selectedPlantingSeason = action.season)
+            }
+
+            is ProductActions.AddDisease -> {
+                val updatedDiseases = productState.diseases.toMutableList()
+                updatedDiseases.add(action.disease)
+                productState = productState.copy(diseases = updatedDiseases)
+            }
+
+            is ProductActions.UpdateDisease -> {
+                val updatedDiseases = productState.diseases.toMutableList()
+                if (action.index < updatedDiseases.size) {
+                    updatedDiseases[action.index] = action.disease
+                    productState = productState.copy(diseases = updatedDiseases)
+                }
+            }
+
+            is ProductActions.RemoveDisease -> {
+                if (productState.diseases.size > 1) { // Keep at least one disease field
+                    val updatedDiseases = productState.diseases.toMutableList()
+                    updatedDiseases.removeAt(action.index)
+                    productState = productState.copy(diseases = updatedDiseases)
+                }
+            }
+
             ProductActions.GoBack -> {
             }
 
@@ -200,6 +255,10 @@ class StoreViewModel @Inject constructor(
             is ProductActions.PriceUpdated -> {
                 productState = productState.copy(price = action.price)
             }
+            is ProductActions.BrandUpdated-> {
+                productState = productState.copy(brandName = action.brand)
+            }
+
 
             is ProductActions.DescriptionUpdated -> {
                 productState = productState.copy(description = action.description)
@@ -234,19 +293,42 @@ class StoreViewModel @Inject constructor(
                     productState = productState.copy(errorMessage = validationMessage)
                     return
                 }
+                val price = productState.price.toDoubleOrNull() ?: 0.0
+                val quantity = productState.quantity.toLongOrNull() ?: 0L
+                val weight = productState.weight.toFloatOrNull() ?: 0f
+
+                // Create base product with common fields
+                val product = Product(
+                    name = productState.productName,
+                    price = price,
+                    description = productState.description,
+                    quantity = quantity,
+                    weightOrVolume = weight,
+                    unit = productState.measurement,
+                    category = productState.selectedCategory,
+                    brandName = productState.brandName
+                )
+
+                // Add category-specific attributes based on selectedCategory
+                when (productState.selectedCategory) {
+                    "Seeds" -> {
+                        product.germinationRate = 0f  // Default value, replace if you have this in state
+                        product.plantingSeason = listOf(productState.selectedPlantingSeason)
+                        product.daysToHarvest = 0L    // Default value, replace if you have this in state
+                    }
+                    "Fertilizers" -> {
+                        product.applicationMethod = productState.selectedApplicationMethod
+                    }
+                    "Medicine" -> {
+                        // Filter out any empty disease entries
+                        product.targetPestsOrDiseases = productState.diseases.filter { it.isNotBlank() }
+                    }
+                }
 
 
                 viewModelScope.launch {
                     repository.addProduct(
-                        Product(
-                            name = productState.productName,
-                            price = productState.price.toDouble(),
-                            description = productState.description,
-                            quantity = productState.quantity.toLong(),
-                            weightOrVolume = productState.weight.toFloat(),
-                            unit = productState.measurement,
-                            category = productState.selectedCategory
-                        ),
+                        product = product,
                         imageByteArrays = action.listOfImageByteArrays,
                         imageUris = productState.imageUris
                     ).collect { result ->
@@ -286,9 +368,6 @@ class StoreViewModel @Inject constructor(
 
             }
 
-            is ProductActions.CategoryUpdated -> {
-                productState = productState.copy(selectedCategory = action.category)
-            }
 
             is ProductActions.UpdateTheProduct -> {
                 val validationMessage = validateProductFields()
@@ -321,14 +400,21 @@ class StoreViewModel @Inject constructor(
     private fun validateProductFields(): String? {
         return when {
             productState.productName.isBlank() -> "Product name cannot be empty."
+            productState.brandName.isBlank() -> "Brand name cannot be empty."
             productState.description.isBlank() -> "Product description cannot be empty."
-            productState.price.toDouble() <= 0 -> "Price must be greater than zero."
-            (productState.quantity.toLongOrNull()
-                ?: 0L) <= 0 -> "Quantity must be greater than zero."
-
-            (productState.weight.toFloatOrNull() ?: 0f) <= 0 -> "Weight must be greater than zero."
+            productState.price.isBlank() -> "Price cannot be empty."
+            productState.price.toDoubleOrNull() == null -> "Price must be a valid number."
+            productState.price.toDoubleOrNull()!! <= 0 -> "Price must be greater than zero."
+            productState.quantity.isBlank() -> "Quantity cannot be empty."
+            productState.quantity.toLongOrNull() == null -> "Quantity must be a valid number."
+            productState.quantity.toLongOrNull()!! <= 0 -> "Quantity must be greater than zero."
+            productState.weight.isBlank() -> "Weight cannot be empty."
+            productState.weight.toFloatOrNull() == null -> "Weight must be a valid number."
+            productState.weight.toFloatOrNull()!! <= 0 -> "Weight must be greater than zero."
             productState.measurement.isBlank() -> "Measurement unit cannot be empty."
             productState.imageUris.isEmpty() -> "At least one product image is required."
+            productState.diseases.any { it.isBlank() } && productState.selectedCategory == "Medicine" ->
+                "All disease fields must be filled for medicine products."
             else -> null
         }
     }

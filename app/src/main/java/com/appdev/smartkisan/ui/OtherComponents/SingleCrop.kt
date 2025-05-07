@@ -50,7 +50,7 @@ fun SingleCrop(product: Product,context:Context,modifier: Modifier = Modifier, o
             .height(240.dp),
         shape = RoundedCornerShape(8.dp),
         colors = CardDefaults.cardColors(
-            containerColor = if(isSystemInDarkTheme()) Color(0xDF0E3636) else Color.LightGray.copy(alpha = 0.4f)
+            containerColor = MaterialTheme.colorScheme.surface
         )
     ) {
         Column(
@@ -118,22 +118,22 @@ fun SingleCrop(product: Product,context:Context,modifier: Modifier = Modifier, o
                     }
                 }
 
-                Row(
-                    modifier = Modifier.padding(top = 4.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    Image(
-                        painter = painterResource(id = R.drawable.favorite),
-                        contentDescription = "",
-                        modifier = Modifier.size(20.dp)
-                    )
-                    Text(
-                        text = product.ratings.toString(),
-                        fontSize = 14.sp,
-                        color = MaterialTheme.colorScheme.onBackground
-                    )
-                }
+//                Row(
+//                    modifier = Modifier.padding(top = 4.dp),
+//                    verticalAlignment = Alignment.CenterVertically,
+//                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+//                ) {
+//                    Image(
+//                        painter = painterResource(id = R.drawable.favorite),
+//                        contentDescription = "",
+//                        modifier = Modifier.size(20.dp)
+//                    )
+//                    Text(
+//                        text = product.ratings.toString(),
+//                        fontSize = 14.sp,
+//                        color = MaterialTheme.colorScheme.onBackground
+//                    )
+//                }
             }
         }
     }

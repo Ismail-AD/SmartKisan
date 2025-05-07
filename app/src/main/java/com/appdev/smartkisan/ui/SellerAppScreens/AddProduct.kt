@@ -27,7 +27,13 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.HealthAndSafety
+import androidx.compose.material3.ButtonColors
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenuItem
@@ -40,9 +46,11 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -130,7 +138,8 @@ fun AddProductScreen(productState: ProductState, onAction: (ProductActions) -> U
                     modifier = Modifier.size(23.dp)
                 )
             }
-        })
+        }, colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
+        )
     }) { innerPadding ->
         Box(
             modifier = Modifier
@@ -160,7 +169,17 @@ fun AddProductScreen(productState: ProductState, onAction: (ProductActions) -> U
                             )
                         )
                     },
-                    placeholder = "Enter the name of your product", singleLine = true
+                    placeholder = "Enter the name of product", singleLine = true
+                )
+                TitledOutlinedTextField(
+                    title = "Brand Name",
+                    value = productState.brandName,
+                    onValueChange = {
+                        onAction.invoke(
+                            ProductActions.BrandUpdated(brand = it)
+                        )
+                    },
+                    placeholder = "Enter the brand name of product", singleLine = true
                 )
 
                 TitledOutlinedTextField(
@@ -193,7 +212,7 @@ fun AddProductScreen(productState: ProductState, onAction: (ProductActions) -> U
                                 )
                             }
                         },
-                        placeholder = "Enter your product quantity",
+                        placeholder = "Enter quantity",
                         singleLine = true, isNumber = true
                     )
                     DropdownMenu(
@@ -209,6 +228,119 @@ fun AddProductScreen(productState: ProductState, onAction: (ProductActions) -> U
                         },
                         modifier = Modifier.weight(1f)
                     )
+                }
+
+                when (productState.selectedCategory) {
+                    "Seeds" -> {
+                        // Add planting season dropdown for Seeds
+                        DropdownMenu(
+                            title = "Planting Season",
+                            options = productState.plantingSeasons,
+                            selectedOption = productState.selectedPlantingSeason,
+                            onOptionSelected = {
+                                onAction.invoke(ProductActions.PlantingSeasonUpdated(season = it))
+                            }
+                        )
+                    }
+
+                    "Fertilizers" -> {
+                        // Add application method dropdown for Fertilizers
+                        DropdownMenu(
+                            title = "Application Method",
+                            options = productState.applicationMethods,
+                            selectedOption = productState.selectedApplicationMethod,
+                            onOptionSelected = {
+                                onAction.invoke(ProductActions.ApplicationMethodUpdated(method = it))
+                            }
+                        )
+                    }
+
+                    "Medicine" -> {
+                        Text(
+                            text = "Diseases Treated",
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            modifier = Modifier.padding(top = 10.dp),
+                            color = MaterialTheme.colorScheme.onBackground
+                        )
+
+                        // Disease fields
+                        productState.diseases.forEachIndexed { index, disease ->
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                OutlinedTextField(
+                                    value = disease,
+                                    onValueChange = { newValue ->
+                                        onAction.invoke(
+                                            ProductActions.UpdateDisease(
+                                                index,
+                                                newValue
+                                            )
+                                        )
+                                    },
+                                    modifier = Modifier.weight(1f),
+                                    placeholder = { Text("Enter disease name") },
+                                    leadingIcon = {
+                                        Icon(
+                                            imageVector = Icons.Default.HealthAndSafety,
+                                            contentDescription = "Disease",
+                                            tint = myGreen
+                                        )
+                                    },
+                                    colors = TextFieldDefaults.colors(
+                                        unfocusedIndicatorColor = Color.LightGray,
+                                        focusedIndicatorColor = myGreen,
+                                        unfocusedContainerColor = Color.Transparent,
+                                        focusedContainerColor = Color.Transparent,
+                                        cursorColor = myGreen,
+                                    ),
+                                    singleLine = true
+                                )
+
+                                if (productState.diseases.size > 1) {
+                                    IconButton(
+                                        onClick = {
+                                            onAction.invoke(ProductActions.RemoveDisease(index))
+                                        }
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Delete,
+                                            contentDescription = "Remove Disease",
+                                            tint = Color.Red
+                                        )
+                                    }
+                                }
+                            }
+                        }
+
+                        // Add new disease button
+                        if (productState.diseases.size < 5) { // Limit to 5 diseases max
+                            TextButton(
+                                onClick = {
+                                    if (productState.diseases.any { it.isBlank() }) {
+                                        showToastState =
+                                            Pair(true, "Fill the empty disease field first!")
+                                    } else {
+                                        onAction.invoke(ProductActions.AddDisease())
+                                    }
+                                },
+                                modifier = Modifier.align(Alignment.End),
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Add,
+                                    contentDescription = "Add Disease",
+                                    tint = myGreen
+                                )
+                                Text(
+                                    text = "Add Another Disease",
+                                    color = myGreen
+                                )
+                            }
+                        }
+                    }
                 }
 
 
@@ -291,10 +423,14 @@ fun AddProductScreen(productState: ProductState, onAction: (ProductActions) -> U
                 }
                 CustomButton(
                     onClick = {
-                        Log.d("CHJZAX","Images changed : ${Functions.haveImagesChanged(
-                            productState.imageUris,
-                            productState.initialUris
-                        )}")
+                        Log.d(
+                            "CHJZAX", "Images changed : ${
+                                Functions.haveImagesChanged(
+                                    productState.imageUris,
+                                    productState.initialUris
+                                )
+                            }"
+                        )
                         if (Functions.haveImagesChanged(
                                 productState.imageUris,
                                 productState.initialUris

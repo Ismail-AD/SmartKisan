@@ -11,14 +11,38 @@ data class Product(
     var creatorId: String = "",
     var category: String = "",
     var name: String,
+    var brandName: String = "",
     var price: Double,
     var discountPrice: Double = 0.0,
     var imageUrls: List<String> = listOf(),
-    var ratings: Float = 0f,
-    var reviewsCount: Long = 0L,
     var description: String,
     var quantity: Long,
     var weightOrVolume: Float,
     var updateTime: String = "",
-    var unit: String? = ""
+    var unit: String? = "",
+    // Seeds specific attributes
+    var germinationRate: Float? = null,
+    var plantingSeason: List<String>? = null,
+    var daysToHarvest: Long? = null,
+    // Fertilizer specific attributes
+    var applicationMethod: String? = null,
+    // Medicine specific attributes
+    var targetPestsOrDiseases: List<String>? = null
 ) : Parcelable
+
+
+// For Seeds( germination rate Float --- planting season (list of string) ---- Minimum Days to Harvest (Long)
+// Fertilizer (applicationMethod: String )
+// Medicine ( target pests/diseases)
+// val applicationMethods = listOf(
+//    "Spray",
+//    "Soil mix",
+//    "Foliar application",
+//    "Drip irrigation",
+//    "Broadcasting",
+//    "Seed treatment",
+//    "Drenching",
+//    "Furrow application",
+//    "Side dressing",
+//    "Top dressing"
+//)

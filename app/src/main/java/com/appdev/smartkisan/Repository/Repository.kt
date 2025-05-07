@@ -14,6 +14,7 @@ import io.github.jan.supabase.auth.providers.builtin.Email
 import io.github.jan.supabase.auth.providers.builtin.Phone
 import io.github.jan.supabase.auth.user.UserSession
 import io.github.jan.supabase.postgrest.from
+import io.github.jan.supabase.postgrest.query.Order
 import io.github.jan.supabase.storage.storage
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -82,6 +83,44 @@ class Repository @Inject constructor(
         }
     }
 
+    fun getRecentProducts(): Flow<ResultState<List<Product>>> = flow {
+        getCurrentUserId()?.let { uid ->
+            emit(ResultState.Loading)
+            try {
+                val listOfProducts = supabaseClient.from("products").select {
+                    filter {
+                        eq("creatorId", uid)
+                    }
+                    order("updateTime", order = Order.DESCENDING) // ensure "created_at" exists in your table
+                    limit(3)
+                }.decodeList<Product>()
+                emit(ResultState.Success(listOfProducts))
+            } catch (e: Exception) {
+                Log.e("SupabaseRepository", "Product retrieval failed: ${e.message}", e)
+                emit(ResultState.Failure(e))
+            }
+        }
+    }
+
+    fun deleteProduct(productId: Long): Flow<ResultState<String>> = flow {
+        getCurrentUserId()?.let { uid ->
+            emit(ResultState.Loading)
+            try {
+                supabaseClient.from("products").delete {
+                    filter {
+                        eq("id", productId)
+                        eq("creatorId", uid)
+                    }
+                }
+                emit(ResultState.Success("Product deleted Successfully!"))
+            } catch (e: Exception) {
+                Log.e("SupabaseRepository", "Product deletion failed: ${e.message}", e)
+                emit(ResultState.Failure(e))
+            }
+        }
+    }
+
+    // Updated updateProduct method to include all product properties
     fun updateProduct(
         product: Product, imageByteArrays: List<ByteArray?>?,
         imageUris: List<Uri?>?
@@ -113,16 +152,30 @@ class Repository @Inject constructor(
                         set("creatorId", uid)
                         set("category", product.category)
                         set("name", product.name)
+                        set("brandName", product.brandName)
                         set("price", product.price)
                         set("discountPrice", product.discountPrice)
                         set("imageUrls", imageUrls)
-                        set("ratings", product.ratings)
-                        set("reviewsCount", product.reviewsCount)
                         set("description", product.description)
                         set("quantity", product.quantity)
                         set("weightOrVolume", product.weightOrVolume)
                         set("updateTime", System.currentTimeMillis().toString())
                         set("unit", product.unit)
+
+                        // Set category-specific attributes based on product category
+                        when (product.category) {
+                            "Seeds" -> {
+                                set("germinationRate", product.germinationRate)
+                                set("plantingSeason", product.plantingSeason)
+                                set("daysToHarvest", product.daysToHarvest)
+                            }
+                            "Fertilizers" -> {
+                                set("applicationMethod", product.applicationMethod)
+                            }
+                            "Medicine" -> {
+                                set("targetPestsOrDiseases", product.targetPestsOrDiseases)
+                            }
+                        }
                     }
                 ) {
                     filter {
@@ -139,24 +192,7 @@ class Repository @Inject constructor(
         }
     }
 
-    fun deleteProduct(productId: Long): Flow<ResultState<String>> = flow {
-        getCurrentUserId()?.let { uid ->
-            emit(ResultState.Loading)
-            try {
-                supabaseClient.from("products").delete {
-                    filter {
-                        eq("id", productId)
-                        eq("creatorId", uid)
-                    }
-                }
-                emit(ResultState.Success("Product deleted Successfully!"))
-            } catch (e: Exception) {
-                Log.e("SupabaseRepository", "Product deletion failed: ${e.message}", e)
-                emit(ResultState.Failure(e))
-            }
-        }
-    }
-
+    // Updated addProduct method with proper category-specific attributes handling
     fun addProduct(
         product: Product,
         imageByteArrays: List<ByteArray?>,
@@ -182,11 +218,19 @@ class Repository @Inject constructor(
                         }
                     }
 
+                    // Create a clean product object with proper category-specific attributes
                     val productWithImages = product.copy(
                         imageUrls = imageUrls,
                         creatorId = uid,
-                        updateTime = System.currentTimeMillis().toString()
+                        updateTime = System.currentTimeMillis().toString(),
+                        // Keep only relevant category-specific attributes based on product category
+                        germinationRate = if (product.category == "Seeds") product.germinationRate else null,
+                        plantingSeason = if (product.category == "Seeds") product.plantingSeason else null,
+                        daysToHarvest = if (product.category == "Seeds") product.daysToHarvest else null,
+                        applicationMethod = if (product.category == "Fertilizers") product.applicationMethod else null,
+                        targetPestsOrDiseases = if (product.category == "Medicine") product.targetPestsOrDiseases else null
                     )
+
                     supabaseClient.from("products").insert(productWithImages)
                     emit(ResultState.Success("Product added successfully"))
                 } catch (e: Exception) {

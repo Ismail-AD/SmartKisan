@@ -37,6 +37,7 @@ class DiseaseDetectViewModel @Inject constructor(val repository: Repository) : V
                 try {
                     detectUiState.selectedImageBitmap?.let { bitmap ->
                         val diseaseName = classifyDisease(action.context, bitmap)
+                        Log.d("JNAMZ", diseaseName)
                         detectUiState =
                             detectUiState.copy(diagnosisResult = diseaseName, isLoading = false)
                     }

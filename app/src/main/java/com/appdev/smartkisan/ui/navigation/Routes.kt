@@ -11,6 +11,8 @@ sealed class Routes(val route: String) {
     object MarketPlace : Routes("MarketPlace_Screen")
     object PlantDisease : Routes("PlantDisease_Screen")
     object DiagnosisResult : Routes("DiagnosisResult_Screen")
+    object NewsList : Routes("News_Screen")
+    object NewsDetails : Routes("NewsDetails_Screen")
     object UserInfo : Routes("UserInfo_Screen")
     object ChatBotScreen : Routes("ChatBot_Screen")
     object ProductDetailScreen : Routes("ProductDetail_Screen")

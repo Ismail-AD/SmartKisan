@@ -24,6 +24,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -49,6 +50,7 @@ import com.appdev.smartkisan.ViewModel.MarketplaceViewModel
 import com.appdev.smartkisan.data.Category
 import com.appdev.smartkisan.data.Product
 import com.appdev.smartkisan.ui.OtherComponents.CustomLoader
+import com.appdev.smartkisan.ui.OtherComponents.NoDialogLoader
 import com.appdev.smartkisan.ui.OtherComponents.SingleCrop
 import com.appdev.smartkisan.ui.navigation.Routes
 import kotlinx.serialization.encodeToString
@@ -102,7 +104,7 @@ fun MarketPlaceScreen(
                 )
                 Text(text = "Market place", fontSize = 19.sp, fontWeight = FontWeight.Bold)
             }
-        }, modifier = Modifier.shadow(2.dp))
+        }, colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent))
     }) { paddings ->
         Box(
             modifier = Modifier
@@ -165,7 +167,7 @@ fun MarketPlaceScreen(
                             modifier = Modifier.fillMaxSize(),
                             contentAlignment = Alignment.Center
                         ) {
-                            CustomLoader()
+                            NoDialogLoader("Loading products...")
                         }
                     }
 
@@ -179,7 +181,7 @@ fun MarketPlaceScreen(
                         }
                     }
 
-                    uiState.filteredProducts.isEmpty() -> {
+                    !uiState.isLoading && uiState.filteredProducts.isEmpty() -> {
                         Box(
                             modifier = Modifier.fillMaxSize(),
                             contentAlignment = Alignment.Center

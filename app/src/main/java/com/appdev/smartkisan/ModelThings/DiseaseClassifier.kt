@@ -2,87 +2,175 @@ package com.appdev.smartkisan.ModelThings
 
 import android.content.Context
 import android.graphics.Bitmap
-import com.appdev.smartkisan.ml.Newmodel
-import org.tensorflow.lite.DataType
+import android.util.Log
 import org.tensorflow.lite.Interpreter
-import org.tensorflow.lite.support.tensorbuffer.TensorBuffer
-import org.tensorflow.lite.support.image.ImageProcessor
 import org.tensorflow.lite.support.image.TensorImage
-import java.io.File
-import java.nio.ByteBuffer
-import java.nio.ByteOrder
-fun classifyDisease(context: Context, imageBitmap: Bitmap): String {
-    val model = Newmodel.newInstance(context)
+import org.tensorflow.lite.support.tensorbuffer.TensorBuffer
+import org.tensorflow.lite.support.image.ops.ResizeOp
+import org.tensorflow.lite.support.image.ImageProcessor
+import org.tensorflow.lite.DataType
+import org.tensorflow.lite.support.common.ops.NormalizeOp
+import java.nio.MappedByteBuffer
+import java.io.FileInputStream
+import java.io.IOException
+import java.nio.channels.FileChannel
 
-    val convertedBitmap = imageBitmap.copy(Bitmap.Config.ARGB_8888, true)
+fun classifyDisease(context: Context, bitmap: Bitmap): String {
+    return try {
+        val model = Interpreter(loadModelFile(context, "udpatedmodel.tflite"))
 
-    // Resize image to 224x224
-    val resizedBitmap = Bitmap.createScaledBitmap(convertedBitmap, 224, 224, true)
-    val tensorImage = TensorImage(DataType.FLOAT32)
-    tensorImage.load(resizedBitmap)
+        val inputShape = model.getInputTensor(0).shape() // Should be [1, 160, 160, 3]
+        val inputDataType = model.getInputTensor(0).dataType()
+        Log.d("AZX", "Shape: ${inputShape.contentToString()}, Type: $inputDataType")
+
+        val tensorImage = TensorImage(DataType.FLOAT32)
+
+        val resizedBitmap = Bitmap.createScaledBitmap(bitmap, 160, 160, true)
+        val argbBitmap = resizedBitmap.copy(Bitmap.Config.ARGB_8888, true)
+
+        tensorImage.load(argbBitmap)
+
+        val imageProcessor = ImageProcessor.Builder()
+            .add(ResizeOp(160, 160, ResizeOp.ResizeMethod.BILINEAR))
+            .add(NormalizeOp(127.5f, 127.5f)) // [-1, 1] normalization
+            .build()
+
+        val processedImage = imageProcessor.process(tensorImage)
+
+        val outputShape = model.getOutputTensor(0).shape()
+        val outputDataType = model.getOutputTensor(0).dataType()
+        val outputBuffer = TensorBuffer.createFixedSize(outputShape, outputDataType)
 
 
-    // Get the ByteBuffer from TensorImage
-    val byteBuffer = tensorImage.buffer
+        model.run(processedImage.buffer, outputBuffer.buffer.rewind())
 
-    // Create input tensor
-    val inputFeature0 = TensorBuffer.createFixedSize(intArrayOf(1, 224, 224, 3), DataType.FLOAT32)
-    inputFeature0.loadBuffer(byteBuffer)
+        val confidences = outputBuffer.floatArray
+        val maxIndex = confidences.indices.maxByOrNull { confidences[it] } ?: -1
 
-    // Run model inference
-    val outputs = model.process(inputFeature0)
-    val outputFeature0 = outputs.outputFeature0AsTensorBuffer
+        val labels = listOf(
+            "Apple___Apple_scab",
+            "Apple___Black_rot",
+            "Apple___Cedar_apple_rust",
+            "Apple___healthy",
+            "Background_without_leaves",
+            "Blueberry___healthy",
+            "Cherry___Powdery_mildew",
+            "Cherry___healthy",
+            "Corn___Cercospora_leaf_spot Gray_leaf_spot",
+            "Corn___Common_rust",
+            "Corn___Northern_Leaf_Blight",
+            "Corn___healthy",
+            "Grape___Black_rot",
+            "Grape___Esca_(Black_Measles)",
+            "Grape___Leaf_blight_(Isariopsis_Leaf_Spot)",
+            "Grape___healthy",
+            "Orange___Haunglongbing_(Citrus_greening)",
+            "Peach___Bacterial_spot",
+            "Peach___healthy",
+            "Pepper,_bell___Bacterial_spot",
+            "Pepper,_bell___healthy",
+            "Potato___Early_blight",
+            "Potato___Late_blight",
+            "Potato___healthy",
+            "Raspberry___healthy",
+            "Soybean___healthy",
+            "Squash___Powdery_mildew",
+            "Strawberry___Leaf_scorch",
+            "Strawberry___healthy",
+            "Tomato___Bacterial_spot",
+            "Tomato___Early_blight",
+            "Tomato___Late_blight",
+            "Tomato___Leaf_Mold",
+            "Tomato___Septoria_leaf_spot",
+            "Tomato___Spider_mites Two-spotted_spider_mite",
+            "Tomato___Target_Spot",
+            "Tomato___Tomato_Yellow_Leaf_Curl_Virus",
+            "Tomato___Tomato_mosaic_virus",
+            "Tomato___healthy"
+        )
+        labels.forEachIndexed { index, label ->
+            Log.d("AZX", "Label: $label, Confidence: ${confidences.getOrNull(index)}")
+        }
 
-    // Get predicted index
-    val predictionArray = outputFeature0.floatArray
-    val predictedIndex = predictionArray.indices.maxByOrNull { predictionArray[it] } ?: -1
-
-    // Define the disease labels (make sure the order matches your model's training labels)
-    val diseaseLabels = listOf(
-        "Apple Scab", "Apple Black Rot", "Apple Cedar Rust", "Healthy Apple",
-        "Healthy Blueberry", "Cherry Powdery Mildew", "Healthy Cherry",
-        "Corn Cercospora Leaf Spot", "Corn Common Rust", "Corn Northern Leaf Blight", "Healthy Corn",
-        "Grape Black Rot", "Grape Esca (Black Measles)", "Grape Leaf Blight", "Healthy Grape",
-        "Orange Citrus Greening", "Peach Bacterial Spot", "Healthy Peach",
-        "Bell Pepper Bacterial Spot", "Healthy Bell Pepper",
-        "Potato Early Blight", "Potato Late Blight", "Healthy Potato",
-        "Healthy Raspberry", "Healthy Soybean",
-        "Squash Powdery Mildew", "Strawberry Leaf Scorch", "Healthy Strawberry",
-        "Tomato Bacterial Spot", "Tomato Early Blight", "Tomato Late Blight",
-        "Tomato Leaf Mold", "Tomato Septoria Leaf Spot", "Tomato Spider Mites",
-        "Tomato Target Spot", "Tomato Yellow Leaf Curl Virus", "Tomato Mosaic Virus", "Healthy Tomato"
-    )
-
-    // Get predicted label
-    val predictedLabel = if (predictedIndex in diseaseLabels.indices) diseaseLabels[predictedIndex] else "Unknown"
-
-    // Release model resources
-    model.close()
-
-    return predictedLabel
+        model.close()
+        if (maxIndex in labels.indices) labels[maxIndex] else "Unknown"
+    } catch (e: Exception) {
+        Log.e("AutoMLModel", "Error: ${e.message}")
+        "Error: ${e.message}"
+    }
 }
 
-// Helper function to convert bitmap to input tensor
-private fun convertBitmapToByteBuffer(bitmap: Bitmap): ByteBuffer {
-    val imgData = ByteBuffer.allocateDirect(1 * 224 * 224 * 3 * 4) // 4 bytes per float
-    imgData.order(ByteOrder.nativeOrder())
 
-    val pixels = IntArray(224 * 224)
-    bitmap.getPixels(pixels, 0, bitmap.width, 0, 0, bitmap.width, bitmap.height)
+//fun classifyDisease(context: Context, bitmap: Bitmap): String {
+//    return try {
+//        val model = Interpreter(loadModelFile(context, "model.tflite"))
+//        logModelInfo(model)
+//        val tensorImage = TensorImage(DataType.UINT8)
+//
+//        val argbBitmap = bitmap.copy(Bitmap.Config.ARGB_8888, true)
+//        tensorImage.load(argbBitmap)
+//
+//        val imageProcessor = ImageProcessor.Builder()
+//            .add(ResizeOp(224, 224, ResizeOp.ResizeMethod.BILINEAR)) // Only resize
+//            .build()
+//
+//        val processedImage = imageProcessor.process(tensorImage)
+//
+//        val outputBuffer = TensorBuffer.createFixedSize(intArrayOf(1, 6), DataType.UINT8)
+//
+//
+//        model.run(processedImage.buffer, outputBuffer.buffer.rewind())
+//
+//
+//        val confidences = outputBuffer.floatArray
+//
+//        confidences.forEachIndexed { index, confidence ->
+//            Log.d("Prediction", "Class $index: ${confidence}")
+//        }
+//
+//
+//        val maxIndex = confidences.indices.maxByOrNull { confidences[it] } ?: -1
+//
+//
+//        val labels = listOf(
+//            "Corn_common_rust",
+//            "Corn_gray_leaf_spot",
+//            "Potato_early_blight",
+//            "Strawberry_leaf_scorch",
+//            "Tomato_leaf_mold",
+//            "Tomato_mosaic_virus"
+//        )
+//
+//
+//
+//        model.close()
+//        if (maxIndex in labels.indices) labels[maxIndex] else "Unknown"
+//    } catch (e: Exception) {
+//        Log.e("AutoMLModel", "Error: ${e.message}")
+//        "Error: ${e.message}"
+//    }
+//}
 
-    for (i in 0 until 224) {
-        for (j in 0 until 224) {
-            val pixelValue = pixels[i * 224 + j]
+private fun logModelInfo(interpreter: Interpreter) {
+    try {
+        val inputTensor = interpreter.getInputTensor(0)
+        val outputTensor = interpreter.getOutputTensor(0)
 
-            // Extract RGB values and normalize to [-1, 1] or [0, 1] depending on your model
-            // This example uses [0, 1] normalization
-            // Modify your preprocessing in Android
-            imgData.putFloat(((pixelValue shr 16) and 0xFF) / 127.5f - 1.0f)
-            imgData.putFloat(((pixelValue shr 8) and 0xFF) / 127.5f - 1.0f)
-            imgData.putFloat((pixelValue and 0xFF) / 127.5f - 1.0f)
-        }
+        Log.d("ModelInfo", "Input shape: ${inputTensor.shape().joinToString()}")
+        Log.d("ModelInfo", "Input type: ${inputTensor.dataType()}")
+        Log.d("ModelInfo", "Output shape: ${outputTensor.shape().joinToString()}")
+        Log.d("ModelInfo", "Output type: ${outputTensor.dataType()}")
+    } catch (e: Exception) {
+        Log.e("ModelInfo", "Failed to get model info: ${e.message}")
     }
+}
 
-    imgData.rewind()
-    return imgData
+@Throws(IOException::class)
+private fun loadModelFile(context: Context, modelFilename: String): MappedByteBuffer {
+    val fileDescriptor = context.assets.openFd(modelFilename)
+    val inputStream = FileInputStream(fileDescriptor.fileDescriptor)
+    val fileChannel = inputStream.channel
+    val startOffset = fileDescriptor.startOffset
+    val declaredLength = fileDescriptor.declaredLength
+    return fileChannel.map(FileChannel.MapMode.READ_ONLY, startOffset, declaredLength)
 }

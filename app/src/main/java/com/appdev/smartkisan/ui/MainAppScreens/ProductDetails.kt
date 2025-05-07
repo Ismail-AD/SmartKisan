@@ -27,6 +27,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -66,7 +67,8 @@ fun ProductDetails(
                     )
                 }
             }
-        })
+        }, colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
+        )
     }) { paddings ->
         Box(
             modifier = Modifier
@@ -82,7 +84,8 @@ fun ProductDetails(
                     .verticalScroll(rememberScrollState()),
             ) {
                 Box(
-                    Modifier.fillMaxWidth()
+                    Modifier
+                        .fillMaxWidth()
                         .background(Color.Transparent)
                         .clip(RoundedCornerShape(6.dp))
                 ) {
@@ -98,6 +101,19 @@ fun ProductDetails(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(top = 10.dp)
                 )
+
+                // Brand name
+                if (product.brandName.isNotEmpty()) {
+                    Text(
+                        text = product.brandName,
+                        fontSize = 16.sp,
+                        color = Color.Gray,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.padding(top = 2.dp)
+                    )
+                }
+
                 Row(
                     modifier = Modifier
                         .padding(top = 4.dp),
@@ -130,17 +146,22 @@ fun ProductDetails(
                         )
                     }
                 }
+
                 Text(
                     text = "Details",
                     fontSize = 19.sp,
                     fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onBackground, modifier = Modifier
-                        .padding(top = 20.dp)
+                    color = MaterialTheme.colorScheme.onBackground,
+                    modifier = Modifier.padding(top = 20.dp)
                 )
+
                 Divider(
-                    color = Color.Gray.copy(alpha = 0.2f), thickness = 2.dp, modifier = Modifier
-                        .padding(top = 4.dp)
+                    color = Color.Gray.copy(alpha = 0.2f),
+                    thickness = 2.dp,
+                    modifier = Modifier.padding(top = 4.dp)
                 )
+
+                // Basic details section
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -153,56 +174,114 @@ fun ProductDetails(
                         color = MaterialTheme.colorScheme.onBackground
                     )
                     Text(
-                        text = product.weightOrVolume.toString() + "/" + product.unit,
+                        text = "${product.weightOrVolume}/${product.unit ?: "Kg"}",
                         fontSize = 16.sp,
                         color = Color.Gray
                     )
                 }
+
                 Divider(
-                    color = Color.Gray.copy(alpha = 0.2f), thickness = 2.dp, modifier = Modifier
-                        .padding(top = 2.dp)
+                    color = Color.Gray.copy(alpha = 0.2f),
+                    thickness = 1.dp,
+                    modifier = Modifier.padding(top = 4.dp)
                 )
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 10.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Text(
-                        text = "Ratings",
-                        fontSize = 16.sp,
-                        color = MaterialTheme.colorScheme.onBackground
-                    )
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(5.dp)
-                    ) {
-                        CustomRatingBar(rating = product.ratings)
-                        Text(
-                            text = "(" + product.ratings + ")",
-                            fontSize = 16.sp,
-                            color = Color.Gray
-                        )
+
+                // Category-specific attributes
+                when (product.category) {
+                    "Seeds" -> {
+                        // Show Seeds specific attributes
+                        product.germinationRate?.let {
+                            CategoryAttribute(
+                                label = "Germination Rate",
+                                value = "${it}%"
+                            )
+                        }
+
+                        product.plantingSeason?.let { seasons ->
+                            if (seasons.isNotEmpty()) {
+                                CategoryAttribute(
+                                    label = "Planting Season",
+                                    value = seasons.joinToString(", ")
+                                )
+                            }
+                        }
+
+                        product.daysToHarvest?.let {
+                            CategoryAttribute(
+                                label = "Days to Harvest",
+                                value = "$it days"
+                            )
+                        }
+                    }
+                    "Fertilizers" -> {
+                        // Show Fertilizer specific attributes
+                        product.applicationMethod?.let {
+                            CategoryAttribute(
+                                label = "Application Method",
+                                value = it
+                            )
+                        }
+                    }
+                    "Medicine" -> {
+                        // Show Medicine specific attributes
+                        product.targetPestsOrDiseases?.let { targets ->
+                            if (targets.isNotEmpty()) {
+                                CategoryAttribute(
+                                    label = "Target Pests/Diseases",
+                                    value = targets.joinToString(", ")
+                                )
+                            }
+                        }
                     }
                 }
+
                 Text(
                     text = "Description",
                     fontSize = 19.sp,
                     fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.onBackground, modifier = Modifier
-                        .padding(top = 20.dp)
+                    color = MaterialTheme.colorScheme.onBackground,
+                    modifier = Modifier.padding(top = 20.dp)
                 )
+
                 Divider(
-                    color = Color.Gray.copy(alpha = 0.2f), thickness = 2.dp, modifier = Modifier
-                        .padding(top = 4.dp)
+                    color = Color.Gray.copy(alpha = 0.2f),
+                    thickness = 2.dp,
+                    modifier = Modifier.padding(top = 4.dp)
                 )
+
                 Text(
                     text = product.description,
                     color = MaterialTheme.colorScheme.onBackground,
-                    modifier = Modifier.padding(top = 10.dp)
+                    modifier = Modifier.padding(top = 10.dp, bottom = 20.dp)
                 )
             }
         }
     }
+}
+
+@Composable
+fun CategoryAttribute(label: String, value: String) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 10.dp),
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Text(
+            text = label,
+            fontSize = 16.sp,
+            color = MaterialTheme.colorScheme.onBackground
+        )
+        Text(
+            text = value,
+            fontSize = 16.sp,
+            color = Color.Gray
+        )
+    }
+    Divider(
+        color = Color.Gray.copy(alpha = 0.2f),
+        thickness = 1.dp,
+        modifier = Modifier.padding(top = 4.dp)
+    )
 }
 

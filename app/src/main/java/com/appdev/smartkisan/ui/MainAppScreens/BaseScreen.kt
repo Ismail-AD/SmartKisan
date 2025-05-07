@@ -33,7 +33,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.BlurredEdgeTreatment
@@ -51,6 +53,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -59,7 +62,10 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.appdev.smartkisan.Actions.ChatActions
+import com.appdev.smartkisan.Utils.DateTimeUtils
 import com.appdev.smartkisan.ViewModel.ChatMessagesViewModel
+import com.appdev.smartkisan.ViewModel.NewsViewModel
+import com.appdev.smartkisan.data.New
 import com.appdev.smartkisan.data.Product
 import com.appdev.smartkisan.ui.SharedScreens.ChatMessagesRoot
 import com.appdev.smartkisan.ui.navigation.Routes
@@ -77,6 +83,8 @@ fun BaseScreen() {
     val hideBottomBarRoutes = listOf(
         Routes.ProductDetailScreen.route + "/{productJson}", Routes.DiagnosisResult.route,
         Routes.ChatBotScreen.route,
+        Routes.NewsList.route,
+        Routes.NewsDetails.route+"/{newsJson}",
         Routes.UserChatListScreen.route,
         Routes.ChatInDetailScreen.route + "/{receiverId}/{name}/{profilePic}"
     )
@@ -167,6 +175,37 @@ fun BaseScreen() {
             }
 
             composable(Routes.DiagnosisResult.route) { DiagnosisResult(controller) }
+            composable(Routes.NewsList.route) {
+                AgricultureNewsRoot(controller)
+            }
+
+            composable(
+                route = "${Routes.NewsDetails.route}/{newsJson}",
+                arguments = listOf(navArgument("newsJson") { type = NavType.StringType })
+            ) { backStackEntry ->
+                val newsJson = backStackEntry.arguments?.getString("newsJson") ?: ""
+
+                val news = try {
+                    Json.decodeFromString<New>(Uri.decode(newsJson))
+                } catch (e: Exception) {
+                    null
+                }
+
+                if (news != null) {
+                    var date by remember {
+                        mutableStateOf(DateTimeUtils.formatDateTime(news.publish_date))
+                    }
+                    NewsDetailScreen(
+                        date,
+                        news = news,
+                        onBackPressed = { controller.popBackStack() }
+                    )
+                } else {
+                    // Show error state if article not found
+                    EmptyState(message = "Article not found or has been removed")
+                }
+            }
+
             composable(route = Routes.ProductDetailScreen.route + "/{productJson}",
                 arguments = listOf(
                     navArgument("productJson") {
