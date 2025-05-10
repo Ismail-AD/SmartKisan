@@ -1,7 +1,6 @@
 package com.appdev.smartkisan.ui.OtherComponents
 
 import android.content.Context
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
@@ -118,23 +117,19 @@ fun ExpandedItem(
                         }
                     }
 
-//                    Row(
-//                        modifier = Modifier.padding(top = 4.dp),
-//                        verticalAlignment = Alignment.CenterVertically,
-//                        horizontalArrangement = Arrangement.spacedBy(6.dp)
-//                    ) {
-//                        Image(
-//                            painter = painterResource(id = R.drawable.favorite),
-//                            contentDescription = "",
-//                            modifier = Modifier.size(20.dp)
-//                        )
-//                        Text(
-//                            text = product.ratings.toString(),
-//                            fontSize = 14.sp,
-//                            color = MaterialTheme.colorScheme.onBackground
-//                        )
-//                    }
-
+                    Row(
+                        modifier = Modifier.padding(top = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Text(
+                            text = product.brandName,
+                            fontSize = 14.sp,
+                            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.8f),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
                 }
 
                 Column(
@@ -200,4 +195,3 @@ fun ExpandedItem(
         }
     }
 }
-

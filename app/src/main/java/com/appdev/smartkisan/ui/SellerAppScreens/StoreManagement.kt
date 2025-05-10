@@ -58,6 +58,7 @@ import com.appdev.smartkisan.ViewModel.StoreViewModel
 import com.appdev.smartkisan.ui.OtherComponents.ExpandedItem
 import com.appdev.smartkisan.ui.OtherComponents.SearchField
 import com.appdev.smartkisan.ui.OtherComponents.CustomLoader
+import com.appdev.smartkisan.ui.OtherComponents.NoDialogLoader
 import com.appdev.smartkisan.ui.navigation.Routes
 import com.appdev.smartkisan.ui.theme.myGreen
 import kotlinx.serialization.encodeToString
@@ -154,104 +155,17 @@ fun StoreManagementScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .background(MaterialTheme.colorScheme.background)
-                .padding(innerPadding)
+
         ) {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(horizontal = 15.dp)
             ) {
-                // Search field
-                SearchField(
-                    query = uiState.searchQuery,
-                    placeholder = "Search Products",
-                    modifier = Modifier.fillMaxWidth(),
-                    onFocusChange = { },
-                    onTextChange = { text ->
-                        onStoreAction(SellerStoreActions.SetSearchQuery(text))
-                    },
-                    onBackClick = {
-                        focusManager.clearFocus()
-                        onStoreAction(SellerStoreActions.ClearSearchQuery)
-                    }
-                )
-
-                // Category dropdown
-                ExposedDropdownMenuBox(
-                    expanded = uiState.isDropdownExpanded,
-                    onExpandedChange = {
-                        onStoreAction(SellerStoreActions.ToggleDropdown(it))
-                    },
-                    modifier = Modifier
-                        .padding(top = 10.dp)
-                        .border(
-                            (1.5).dp,
-                            if (isSystemInDarkTheme()) Color(0xFF114646) else Color(0xFFE4E7EE),
-                            RoundedCornerShape(5.dp)
-                        )
-                ) {
-                    TextField(
-                        value = uiState.selectedCategory,
-                        onValueChange = {},
-                        readOnly = true,
-                        colors = TextFieldDefaults.colors(
-                            focusedIndicatorColor = Color.Transparent,
-                            unfocusedIndicatorColor = Color.Transparent,
-                            focusedContainerColor = Color.Transparent,
-                            unfocusedContainerColor = Color.Transparent
-                        ),
-                        modifier = Modifier.menuAnchor(),
-                        shape = RoundedCornerShape(10.dp),
-                        trailingIcon = {
-                            ExposedDropdownMenuDefaults.TrailingIcon(expanded = uiState.isDropdownExpanded)
-                        }
-                    )
-
-                    ExposedDropdownMenu(
-                        expanded = uiState.isDropdownExpanded,
-                        onDismissRequest = {
-                            onStoreAction(SellerStoreActions.ToggleDropdown(false))
-                        },
-                        shape = RoundedCornerShape(5.dp),
-                        containerColor = MaterialTheme.colorScheme.background,
-                        border = BorderStroke(
-                            1.dp,
-                            if (isSystemInDarkTheme()) Color(0xFF114646) else Color(0xFFE4E7EE)
-                        )
-                    ) {
-                        uiState.categories.forEachIndexed { index, category ->
-                            DropdownMenuItem(
-                                text = {
-                                    Text(
-                                        text = category,
-                                        color = MaterialTheme.colorScheme.onBackground
-                                    )
-                                },
-                                onClick = {
-                                    onStoreAction(SellerStoreActions.SelectCategory(category))
-                                },
-                                modifier = Modifier.background(
-                                    if (uiState.selectedCategory == category)
-                                        if (isSystemInDarkTheme()) Color(0xFF114646) else Color(
-                                            0xFFE4E7EE
-                                        )
-                                    else Color.Transparent
-                                )
-                            )
-                            if (index != uiState.categories.lastIndex && category != uiState.selectedCategory) {
-                                HorizontalDivider(
-                                    thickness = 1.dp,
-                                    color = Color.Gray.copy(alpha = if (isSystemInDarkTheme()) 0.6f else 0.2f)
-                                )
-                            }
-                        }
-                    }
-                }
-
                 // Product list
                 when {
                     uiState.isLoading -> {
-                        CustomLoader()
+                        NoDialogLoader("Loading Products...")
                     }
 
                     uiState.error != null -> {
@@ -284,6 +198,92 @@ fun StoreManagementScreen(
                                     product.name.contains(uiState.searchQuery, ignoreCase = true)
 
                             matchesCategory && matchesQuery
+                        }
+                        // Search field
+                        SearchField(
+                            query = uiState.searchQuery,
+                            placeholder = "Search Products",
+                            modifier = Modifier.fillMaxWidth(),
+                            onFocusChange = { },
+                            onTextChange = { text ->
+                                onStoreAction(SellerStoreActions.SetSearchQuery(text))
+                            },
+                            onBackClick = {
+                                focusManager.clearFocus()
+                                onStoreAction(SellerStoreActions.ClearSearchQuery)
+                            }
+                        )
+
+                        // Category dropdown
+                        ExposedDropdownMenuBox(
+                            expanded = uiState.isDropdownExpanded,
+                            onExpandedChange = {
+                                onStoreAction(SellerStoreActions.ToggleDropdown(it))
+                            },
+                            modifier = Modifier
+                                .padding(top = 10.dp)
+                                .border(
+                                    (1.5).dp,
+                                    if (isSystemInDarkTheme()) Color(0xFF114646) else Color(0xFFE4E7EE),
+                                    RoundedCornerShape(5.dp)
+                                )
+                        ) {
+                            TextField(
+                                value = uiState.selectedCategory,
+                                onValueChange = {},
+                                readOnly = true,
+                                colors = TextFieldDefaults.colors(
+                                    focusedIndicatorColor = Color.Transparent,
+                                    unfocusedIndicatorColor = Color.Transparent,
+                                    focusedContainerColor = Color.Transparent,
+                                    unfocusedContainerColor = Color.Transparent
+                                ),
+                                modifier = Modifier.menuAnchor(),
+                                shape = RoundedCornerShape(10.dp),
+                                trailingIcon = {
+                                    ExposedDropdownMenuDefaults.TrailingIcon(expanded = uiState.isDropdownExpanded)
+                                }
+                            )
+
+                            ExposedDropdownMenu(
+                                expanded = uiState.isDropdownExpanded,
+                                onDismissRequest = {
+                                    onStoreAction(SellerStoreActions.ToggleDropdown(false))
+                                },
+                                shape = RoundedCornerShape(5.dp),
+                                containerColor = MaterialTheme.colorScheme.background,
+                                border = BorderStroke(
+                                    1.dp,
+                                    if (isSystemInDarkTheme()) Color(0xFF114646) else Color(0xFFE4E7EE)
+                                )
+                            ) {
+                                uiState.categories.forEachIndexed { index, category ->
+                                    DropdownMenuItem(
+                                        text = {
+                                            Text(
+                                                text = category,
+                                                color = MaterialTheme.colorScheme.onBackground
+                                            )
+                                        },
+                                        onClick = {
+                                            onStoreAction(SellerStoreActions.SelectCategory(category))
+                                        },
+                                        modifier = Modifier.background(
+                                            if (uiState.selectedCategory == category)
+                                                if (isSystemInDarkTheme()) Color(0xFF114646) else Color(
+                                                    0xFFE4E7EE
+                                                )
+                                            else Color.Transparent
+                                        )
+                                    )
+                                    if (index != uiState.categories.lastIndex && category != uiState.selectedCategory) {
+                                        HorizontalDivider(
+                                            thickness = 1.dp,
+                                            color = Color.Gray.copy(alpha = if (isSystemInDarkTheme()) 0.6f else 0.2f)
+                                        )
+                                    }
+                                }
+                            }
                         }
 
                         LazyColumn(

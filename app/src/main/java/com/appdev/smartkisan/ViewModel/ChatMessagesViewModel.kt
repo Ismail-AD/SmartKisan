@@ -6,6 +6,7 @@ import com.appdev.smartkisan.Actions.ChatActions
 import com.appdev.smartkisan.Repository.UserChatsRepository
 import com.appdev.smartkisan.States.ChatUiState
 import com.appdev.smartkisan.Utils.ResultState
+import com.appdev.smartkisan.Utils.SessionManagement
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -15,11 +16,24 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
-class ChatMessagesViewModel @Inject constructor(val chatRepository: UserChatsRepository) :
+class ChatMessagesViewModel @Inject constructor(val chatRepository: UserChatsRepository,val sessionManagement: SessionManagement) :
     ViewModel() {
     private val _state = MutableStateFlow(ChatUiState())
     val state: StateFlow<ChatUiState> = _state.asStateFlow()
     val currentUserId = chatRepository.getCurrentUserId() ?: ""
+
+    init {
+        setUserData()
+    }
+    fun setUserData() {
+        _state.value = _state.value.copy(userName = getUserName(), userImage = getProfileImage())
+    }
+    fun getUserName():String{
+        return sessionManagement.getUserName() ?:""
+    }
+    fun getProfileImage():String{
+        return sessionManagement.getUserImage() ?:""
+    }
 
 
     fun onAction(action: ChatActions) {

@@ -17,7 +17,10 @@ import javax.inject.Inject
 
 
 @HiltViewModel
-class RecentChatsViewModel @Inject constructor(val chatRepository: UserChatsRepository,val repository: Repository) : ViewModel() {
+class RecentChatsViewModel @Inject constructor(
+    val chatRepository: UserChatsRepository,
+    val repository: Repository
+) : ViewModel() {
     private val _state = MutableStateFlow(ChatListUiState())
     val state: StateFlow<ChatListUiState> = _state.asStateFlow()
 
@@ -31,10 +34,17 @@ class RecentChatsViewModel @Inject constructor(val chatRepository: UserChatsRepo
             is ChatListActions.CurrentSelectedTab -> {
                 _state.value = _state.value.copy(currentTab = action.selectedTab)
                 if (action.selectedTab == 0) {
-                    onAction(ChatListActions.GetMyMessages)
+                    loadRecentChats()
                 } else {
-                    onAction(ChatListActions.GetChatWithList)
+                    fetchSellersProfiles()
                 }
+            }
+
+            is ChatListActions.SearchChats -> {
+                searchChats(action.query)
+            }
+            is ChatListActions.UpdateQuery -> {
+                _state.value = _state.value.copy(query = action.query)
             }
 
             ChatListActions.GetChatWithList -> {
@@ -45,7 +55,7 @@ class RecentChatsViewModel @Inject constructor(val chatRepository: UserChatsRepo
                 loadRecentChats()
             }
 
-            else->{
+            else -> {
 
             }
         }
@@ -83,6 +93,20 @@ class RecentChatsViewModel @Inject constructor(val chatRepository: UserChatsRepo
         }
     }
 
+
+    private fun searchChats(query: String) {
+        if (query.isEmpty()) {
+            _state.update { it.copy(filteredChats = emptyList()) }
+            return
+        }
+
+        val filteredList = _state.value.recentMessages.filter { chatMate ->
+            chatMate.receiverName.contains(query, ignoreCase = true) ||
+                    (chatMate.lastMessage?.contains(query, ignoreCase = true) == true)
+        }
+
+        _state.update { it.copy(filteredChats = filteredList) }
+    }
 
 
     private fun loadRecentChats() {

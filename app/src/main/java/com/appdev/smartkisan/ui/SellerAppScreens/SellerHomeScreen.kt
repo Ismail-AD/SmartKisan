@@ -79,6 +79,7 @@ fun SellerHomeScreen(
     val context = LocalContext.current
     LaunchedEffect(Unit) {
         viewModel.loadDashboardData()
+        viewModel.setUserData()
     }
 
 
@@ -90,7 +91,7 @@ fun SellerHomeScreen(
                     horizontalArrangement = Arrangement.spacedBy(10.dp),
                 ) {
                     Text(
-                        text = "Hello ${SessionManagement.getUserName(context)} \uD83D\uDC4B",
+                        text = "Hello ${uiState.userName} \uD83D\uDC4B",
                         fontSize = 18.sp,
                         fontWeight = FontWeight.SemiBold,
                         color = MaterialTheme.colorScheme.onBackground
@@ -100,7 +101,7 @@ fun SellerHomeScreen(
                 Box(modifier = Modifier.padding(end = 12.dp)) {
                     AsyncImage(
                         model = ImageRequest.Builder(context)
-                            .data(SessionManagement.getUserImage(context))
+                            .data(uiState.userImage)
                             .crossfade(true)
                             .build(),
                         contentDescription = "User Image",
@@ -211,8 +212,7 @@ fun SellerHomeScreen(
                 if (uiState.isLoading) {
                     Box(
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .height(200.dp),
+                            .fillMaxWidth().height(250.dp),
                         contentAlignment = Alignment.Center
                     ) {
                         NoDialogLoader("Loading Recent Products...")

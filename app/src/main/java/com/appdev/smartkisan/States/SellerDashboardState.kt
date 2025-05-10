@@ -7,5 +7,7 @@ data class SellerDashboardState(
     val isLoading: Boolean = false,
     val products: List<Product> = emptyList(),
     val statusCards: List<statusCard> = emptyList(),
-    val errorMessage: String? = null
+    val errorMessage: String? = null,
+    val userImage:String="",
+    val userName:String="",
 )

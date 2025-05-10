@@ -86,7 +86,6 @@ fun HomeRoot(
         permission = Manifest.permission.ACCESS_FINE_LOCATION
     )
     val weatherState by homeScreenViewModel.weatherState.collectAsState()
-    val lifecycleOwner = LocalLifecycleOwner.current
 
 
 
@@ -235,25 +234,17 @@ fun HomeScreen(weatherState: WeatherState, onAction: (HomeScreenActions) -> Unit
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
             ) {
                 Text(
-                    text = "Hello ${SessionManagement.getUserName(context)} \uD83D\uDC4B",
+                    text = "Hello ${weatherState.userName} \uD83D\uDC4B",
                     fontSize = 18.sp,
                     fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.onBackground
                 )
-//                Image(
-//                    painter = painterResource(id = R.drawable.farmer),
-//                    contentDescription = "",
-//                    modifier = Modifier.size(28.dp)
-//                )
             }
         }, actions = {
-//            IconButton(onClick = {
-//                controller.navigate(Routes.ChatBotScreen.route)
-//            }) {
             Box(modifier = Modifier.padding(end = 12.dp)) {
                 AsyncImage(
                     model = ImageRequest.Builder(context)
-                        .data(SessionManagement.getUserImage(context))
+                        .data(weatherState.userImage)
                         .crossfade(true)
                         .build(),
                     contentDescription = "User Image",
@@ -263,11 +254,9 @@ fun HomeScreen(weatherState: WeatherState, onAction: (HomeScreenActions) -> Unit
                         .size(40.dp)
                         .clip(CircleShape)
                         .border(1.dp, Color.LightGray, CircleShape),
-                    contentScale = ContentScale.Crop  // Changed from FillBounds to Crop for better circle fitting
+                    contentScale = ContentScale.Crop
                 )
             }
-
-//            }
         }, colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent))
     }) { innerPadding ->
         Box(

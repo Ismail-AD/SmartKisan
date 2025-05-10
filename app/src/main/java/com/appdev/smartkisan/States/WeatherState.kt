@@ -13,6 +13,8 @@ enum class LocationPermissionState {
 data class WeatherState(
     val isLoading: Boolean = false,
     val weatherData: WeatherUiModel? = null,
+    val userImage:String="",
+    val userName:String="",
     val locationPermissionState: LocationPermissionState = LocationPermissionState.UNKNOWN,
     val showLocationDialog: Boolean = false,
     val statusMessage: String = "Tap button below to get weather information"

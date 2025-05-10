@@ -95,21 +95,6 @@ fun Login(loginState: UserAuthState, onAction: (UserAuthAction) -> Unit) {
     }
     LaunchedEffect(key1 = loginState.loginSuccess) {
         if (loginState.loginSuccess) {
-            loginState.userSession?.let { session ->
-                SessionManagement.saveSession(
-                    context = context,
-                    accessToken = session.accessToken,
-                    refreshToken = session.refreshToken,
-                    expiresAt = session.expiresAt.epochSeconds,
-                    userId = session.user?.id ?: "",
-                    userEmail = session.user?.email ?: ""
-                )
-            }
-            SessionManagement.saveUserName(context, userName = loginState.userName, userImage = loginState.imageUrl)
-            SessionManagement.saveUserType(
-                context,
-                userType = loginState.userType
-            )
             onAction(UserAuthAction.NextScreen)
         }
     }

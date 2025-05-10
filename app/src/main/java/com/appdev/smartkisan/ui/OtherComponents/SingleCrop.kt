@@ -118,22 +118,19 @@ fun SingleCrop(product: Product,context:Context,modifier: Modifier = Modifier, o
                     }
                 }
 
-//                Row(
-//                    modifier = Modifier.padding(top = 4.dp),
-//                    verticalAlignment = Alignment.CenterVertically,
-//                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-//                ) {
-//                    Image(
-//                        painter = painterResource(id = R.drawable.favorite),
-//                        contentDescription = "",
-//                        modifier = Modifier.size(20.dp)
-//                    )
-//                    Text(
-//                        text = product.ratings.toString(),
-//                        fontSize = 14.sp,
-//                        color = MaterialTheme.colorScheme.onBackground
-//                    )
-//                }
+                Row(
+                    modifier = Modifier.padding(top = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Text(
+                        text = product.brandName,
+                        fontSize = 14.sp,
+                        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.8f),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
             }
         }
     }

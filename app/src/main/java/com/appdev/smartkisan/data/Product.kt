@@ -30,19 +30,3 @@ data class Product(
     var targetPestsOrDiseases: List<String>? = null
 ) : Parcelable
 
-
-// For Seeds( germination rate Float --- planting season (list of string) ---- Minimum Days to Harvest (Long)
-// Fertilizer (applicationMethod: String )
-// Medicine ( target pests/diseases)
-// val applicationMethods = listOf(
-//    "Spray",
-//    "Soil mix",
-//    "Foliar application",
-//    "Drip irrigation",
-//    "Broadcasting",
-//    "Seed treatment",
-//    "Drenching",
-//    "Furrow application",
-//    "Side dressing",
-//    "Top dressing"
-//)

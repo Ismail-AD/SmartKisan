@@ -5,6 +5,7 @@ import android.util.Log
 import com.appdev.smartkisan.Room.Dao.UserInfoDao
 import com.appdev.smartkisan.Utils.ResultState
 import com.appdev.smartkisan.data.Product
+import com.appdev.smartkisan.data.SellerMetaData
 import com.appdev.smartkisan.data.UserEntity
 import com.google.firebase.auth.FirebaseAuth
 import io.github.jan.supabase.SupabaseClient
@@ -267,6 +268,220 @@ class Repository @Inject constructor(
         }
     }
 
+    fun fetchSellerMetaData(): Flow<ResultState<SellerMetaData>> = flow {
+        getCurrentUserId()?.let { userId ->
+            emit(ResultState.Loading)
+            try {
+                val sellerMetaData = try {
+                    supabaseClient
+                        .from("sellersData")
+                        .select {
+                            filter {
+                                eq("id", userId)
+                            }
+                        }
+                        .decodeSingle<SellerMetaData>()
+                } catch (e: NoSuchElementException) {
+                    // If no data is found, insert an empty record with just the id
+                    val emptySellerData = SellerMetaData(id = userId)
+
+                    // Insert the empty record into the database
+                    supabaseClient
+                        .from("sellersData")
+                        .insert(emptySellerData)
+
+                    // Return the empty object we just inserted
+                    emptySellerData
+                }
+
+                emit(ResultState.Success(sellerMetaData))
+            } catch (e: Exception) {
+                Log.e("SellerRepository", "Failed to fetch seller meta data: ${e.message}", e)
+                emit(ResultState.Failure(e))
+            }
+        } ?: emit(ResultState.Failure(Exception("User not authenticated")))
+    }
+
+
+    fun updateUsername(username: String): Flow<ResultState<String>> = flow {
+        emit(ResultState.Loading)
+        try {
+            val userId = getCurrentUserId()
+            if (userId == null) {
+                emit(ResultState.Failure(Exception("User not authenticated")))
+                return@flow
+            }
+
+            supabaseClient
+                .from("users")
+                .update({
+                    set("name", username)
+                }){
+                    filter {
+                        eq("id", userId)
+                    }
+                }
+
+            emit(ResultState.Success(username))
+        } catch (e: Exception) {
+            Log.e("SellerRepository", "Failed to update username: ${e.message}", e)
+            emit(ResultState.Failure(e))
+        }
+    }
+
+    fun logout(): Flow<ResultState<Boolean>> = flow {
+        emit(ResultState.Loading)
+        try {
+            // Sign out from Supabase
+            // SignOutScope.GLOBAL will invalidate all session tokens for this user
+            supabaseClient.auth.signOut()
+            emit(ResultState.Success(true))
+        } catch (e: Exception) {
+            emit(ResultState.Failure(e))
+        }
+    }
+
+    // Update shop name
+    fun updateShopName(shopName: String): Flow<ResultState<String>> = flow {
+        emit(ResultState.Loading)
+        try {
+            val userId = getCurrentUserId()
+            if (userId == null) {
+                emit(ResultState.Failure(Exception("User not authenticated")))
+                return@flow
+            }
+
+            supabaseClient
+                .from("sellersData")
+                .update({
+                    set("shopName", shopName)
+                }){
+                    filter {
+                        eq("id", userId)
+                    }
+                }
+
+            emit(ResultState.Success(shopName))
+        } catch (e: Exception) {
+            Log.e("SellerRepository", "Failed to update shop name: ${e.message}", e)
+            emit(ResultState.Failure(e))
+        }
+    }
+
+    fun updateContact(contact: String): Flow<ResultState<String>> = flow {
+        emit(ResultState.Loading)
+        try {
+            val userId = getCurrentUserId()
+            if (userId == null) {
+                emit(ResultState.Failure(Exception("User not authenticated")))
+                return@flow
+            }
+
+            supabaseClient
+                .from("sellersData")
+                .update({
+                    set("contact", contact)
+                }){
+                    filter {
+                        eq("id", userId)
+                    }
+                }
+
+            emit(ResultState.Success(contact))
+        } catch (e: Exception) {
+            Log.e("SellerRepository", "Failed to update contact: ${e.message}", e)
+            emit(ResultState.Failure(e))
+        }
+    }
+
+    // Update password
+    fun updatePassword(email: String,currentPassword: String, newPassword: String): Flow<ResultState<Unit>> = flow {
+        emit(ResultState.Loading)
+        try {
+            try {
+                supabaseClient.auth.signInWith(Email) {
+                    this.email = email
+                    this.password = currentPassword
+                }
+
+                supabaseClient.auth.updateUser {
+                    password = newPassword
+                }
+
+                emit(ResultState.Success(Unit))
+            } catch (e: Exception) {
+                emit(ResultState.Failure(Exception("Current password is incorrect")))
+            }
+        } catch (e: Exception) {
+            emit(ResultState.Failure(e))
+        }
+    }
+
+    // Update shop location
+    fun updateShopLocation(lat:Double,long:Double): Flow<ResultState<String>> = flow {
+        emit(ResultState.Loading)
+        try {
+            val userId = getCurrentUserId()
+            if (userId == null) {
+                emit(ResultState.Failure(Exception("User not authenticated")))
+                return@flow
+            }
+
+            supabaseClient
+                .from("sellersData")
+                .update({
+                    set("latitude", lat)
+                    set("longitude", long)
+                }){
+                    filter {
+                        eq("id", userId)
+                    }
+                }
+
+            emit(ResultState.Success("Shop location updated successfully"))
+        } catch (e: Exception) {
+            Log.e("SellerRepository", "Failed to update shop location: ${e.message}", e)
+            emit(ResultState.Failure(e))
+        }
+    }
+
+    // Update profile image
+    fun updateProfileImage(imageUri: Uri, imageByteArray: ByteArray): Flow<ResultState<String>> = flow {
+        emit(ResultState.Loading)
+        try {
+            val userId = getCurrentUserId()
+            if (userId == null) {
+                emit(ResultState.Failure(Exception("User not authenticated")))
+                return@flow
+            }
+
+            // Upload image to storage
+            val imageUrl = imageUploading(
+                imageUri,
+                imageByteArray,
+                profileImageFolderPath,
+                profileImageBucketId
+            )
+
+            Log.d("ID","${userId}")
+            // Update image URL in database
+            supabaseClient
+                .from("users")
+                .update({
+                    set("imageurl", imageUrl)
+                }){
+                    filter {
+                        eq("id", userId)
+                    }
+                }
+
+            emit(ResultState.Success(imageUrl))
+        } catch (e: Exception) {
+            Log.e("SellerRepository", "Failed to update profile image: ${e.message}", e)
+            emit(ResultState.Failure(e))
+        }
+    }
+
     fun loginUser(myEmail: String, _mpassword: String): Flow<ResultState<UserSession?>> =
         flow {
             emit(ResultState.Loading)
@@ -402,5 +617,4 @@ class Repository @Inject constructor(
     private fun getCurrentUserId(): String? {
         return supabaseClient.auth.currentUserOrNull()?.id
     }
-
 }

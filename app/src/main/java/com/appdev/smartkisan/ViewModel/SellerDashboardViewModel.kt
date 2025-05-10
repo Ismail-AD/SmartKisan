@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.appdev.smartkisan.Repository.Repository
 import com.appdev.smartkisan.States.SellerDashboardState
 import com.appdev.smartkisan.Utils.ResultState
+import com.appdev.smartkisan.Utils.SessionManagement
 import com.appdev.smartkisan.data.Product
 import com.appdev.smartkisan.data.statusCard
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -18,7 +19,8 @@ import javax.inject.Inject
 
 @HiltViewModel
 class SellerDashboardViewModel @Inject constructor(
-    private val repository: Repository
+    private val repository: Repository,
+    val sessionManagement: SessionManagement
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(SellerDashboardState())
@@ -28,10 +30,21 @@ class SellerDashboardViewModel @Inject constructor(
         loadDashboardData()
     }
 
+    fun setUserData() {
+        _uiState.value = _uiState.value.copy(userName = getUserName(), userImage = getProfileImage())
+    }
+
 
     fun loadDashboardData() {
         fetchProducts()
         generateStatusCards()
+    }
+
+    fun getUserName():String{
+        return sessionManagement.getUserName() ?:""
+    }
+    fun getProfileImage():String{
+        return sessionManagement.getUserImage() ?:""
     }
 
     private fun fetchProducts() {

@@ -118,7 +118,13 @@ fun NavGraph(
                 BaseScreen()
             }
             composable(route = Routes.SellerMain.route) {
-                SellerBaseScreen()
+                SellerBaseScreen{
+                    // When logout is triggered from MainScreen, navigate back to Login
+                    controller.navigate(Routes.Login.route) {
+                        // Clear the entire back stack
+                        popUpTo(0) { inclusive = true }
+                    }
+                }
             }
         }
     }

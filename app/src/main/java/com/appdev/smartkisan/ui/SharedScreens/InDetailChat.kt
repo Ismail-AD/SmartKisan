@@ -592,8 +592,8 @@ fun ChatInputField(
                         onAction(
                             ChatActions.SendMessage(
                                 uiState.messageInput,
-                                myImage = SessionManagement.getUserImage(context = context) ?: "",
-                                myName = SessionManagement.getUserName(context) ?: ""
+                                myImage = uiState.userImage,
+                                myName = uiState.userName
                             )
                         )
                     },

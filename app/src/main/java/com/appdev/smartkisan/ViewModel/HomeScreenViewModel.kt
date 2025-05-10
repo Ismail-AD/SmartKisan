@@ -15,6 +15,7 @@ import com.appdev.smartkisan.Repository.WeatherRepository
 import com.appdev.smartkisan.States.LocationPermissionState
 import com.appdev.smartkisan.States.WeatherState
 import com.appdev.smartkisan.Utils.ResultState
+import com.appdev.smartkisan.Utils.SessionManagement
 import com.google.android.gms.location.FusedLocationProviderClient
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -31,7 +32,8 @@ import kotlinx.coroutines.*
 class HomeScreenViewModel @Inject constructor(
     val weatherRepository: WeatherRepository, val geocoder: Geocoder,
     private val fusedLocationClient: FusedLocationProviderClient,
-    @ApplicationContext private val context: Context
+    @ApplicationContext private val context: Context,
+    val sessionManagement: SessionManagement
 ) : ViewModel() {
 
     private val _weatherState = MutableStateFlow(WeatherState())
@@ -40,8 +42,15 @@ class HomeScreenViewModel @Inject constructor(
 
     init {
         checkPermissionsAndLocationStatus()
+        _weatherState.value = _weatherState.value.copy(userName = getUserName(), userImage = getProfileImage())
     }
 
+    fun getUserName():String{
+        return sessionManagement.getUserName() ?:""
+    }
+    fun getProfileImage():String{
+        return sessionManagement.getUserImage() ?:""
+    }
 
     private fun checkPermissionsAndLocationStatus() {
         // Check location permission

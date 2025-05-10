@@ -13,18 +13,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.lifecycleScope
 import com.appdev.smartkisan.Utils.SessionManagement
-import com.appdev.smartkisan.Utils.SessionManagement.isSessionValid
 import com.appdev.smartkisan.ui.navigation.NavGraph
 import com.appdev.smartkisan.ui.theme.SmartKisanTheme
 import dagger.hilt.android.AndroidEntryPoint
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.auth
 import kotlinx.coroutines.launch
-import kotlinx.datetime.TimeZone
-import kotlinx.datetime.toJavaInstant
-import kotlinx.datetime.toLocalDateTime
-import java.time.ZoneId
-import java.time.format.DateTimeFormatter
 import javax.inject.Inject
 
 @AndroidEntryPoint
@@ -32,11 +26,14 @@ class MainActivity : ComponentActivity() {
 
     @Inject
     lateinit var supabaseClient: SupabaseClient
+
+    @Inject
+    lateinit var sessionManagement: SessionManagement
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        val notInitialLaunch = SessionManagement.isOnboardingCompleted(this)
-        val userType = SessionManagement.getUserType(this)
-        val userId = SessionManagement.getUserId(this)
+        val notInitialLaunch = sessionManagement.isOnboardingCompleted()
+        val userType = sessionManagement.getUserType()
+        val userId = sessionManagement.getUserId()
         lifecycleScope.launch {
             val isSessionValid = refreshSessionIfNeeded()
             setContent {
@@ -54,15 +51,14 @@ class MainActivity : ComponentActivity() {
     }
 
     private suspend fun refreshSessionIfNeeded(): Boolean {
-        if (!isSessionValid(this) && SessionManagement.getRefreshToken(this) != null) {
+        if (!sessionManagement.isSessionValid() && sessionManagement.getRefreshToken() != null) {
             try {
-                val getRefreshToken = SessionManagement.getRefreshToken(this)
+                val getRefreshToken = sessionManagement.getRefreshToken()
 
                 val session =
                     supabaseClient.auth.refreshSession(getRefreshToken!!)
 
-                SessionManagement.saveSession(
-                    context = this,
+                sessionManagement.saveSession(
                     accessToken = session.accessToken,
                     refreshToken = session.refreshToken,
                     expiresAt = session.expiresAt.epochSeconds,
@@ -71,11 +67,11 @@ class MainActivity : ComponentActivity() {
                 )
                 return true
             } catch (e: Exception) {
-                SessionManagement.clearSession(this)
+                sessionManagement.clearSession()
                 return false
             }
         }
-        return isSessionValid(this)
+        return sessionManagement.isSessionValid()
     }
 
 

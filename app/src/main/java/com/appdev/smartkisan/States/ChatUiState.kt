@@ -13,5 +13,7 @@ data class ChatUiState(
     val isLoading: Boolean = false,
     val isLoadingChats: Boolean = false,
     val isSending: Boolean = false,
-    val error: String? = null
+    val error: String? = null,
+    val userName:String="",
+    val userImage:String=""
 )

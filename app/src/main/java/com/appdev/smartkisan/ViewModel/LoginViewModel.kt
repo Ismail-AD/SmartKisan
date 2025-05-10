@@ -1,6 +1,5 @@
 package com.appdev.smartkisan.ViewModel
 
-import android.content.Context
 import android.util.Log
 import android.util.Patterns
 import androidx.compose.runtime.getValue
@@ -18,6 +17,7 @@ import com.appdev.smartkisan.data.UserInfo
 import dagger.hilt.android.lifecycle.HiltViewModel
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.auth
+import io.github.jan.supabase.auth.user.UserSession
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -26,10 +26,10 @@ import javax.inject.Inject
 
 @HiltViewModel
 class LoginViewModel @Inject constructor(
-    val repository: Repository,
-    val supabaseClient: SupabaseClient
-) :
-    ViewModel() {
+    private val repository: Repository,
+    private val supabaseClient: SupabaseClient,
+    private val sessionManagement: SessionManagement // Injected SessionManagement
+) : ViewModel() {
 
     var loginState by mutableStateOf(UserAuthState())
         private set
@@ -126,6 +126,28 @@ class LoginViewModel @Inject constructor(
         }
     }
 
+    private fun saveUserSession(
+        session: UserSession,
+        userName: String,
+        userImage: String,
+        userType: String
+    ) {
+        sessionManagement.saveSession(
+            accessToken = session.accessToken,
+            refreshToken = session.refreshToken,
+            expiresAt = session.expiresAt.epochSeconds,
+            userId = session.user?.id ?: "",
+            userEmail = session.user?.email ?: ""
+        )
+
+        sessionManagement.saveUserName(
+            userName = userName,
+            userImage = userImage
+        )
+
+        sessionManagement.saveUserType(userType = userType)
+    }
+
 
     fun onAction(action: UserAuthAction) {
         when (action) {
@@ -165,11 +187,11 @@ class LoginViewModel @Inject constructor(
             }
 
             UserAuthAction.GoBack -> {
-
+                // No implementation needed
             }
 
             UserAuthAction.NextScreen -> {
-
+                // Handle this in the UI
             }
 
             is UserAuthAction.VerifyOtp -> {
@@ -179,7 +201,10 @@ class LoginViewModel @Inject constructor(
                         verifyEmail(action.email, action.code).collect { result ->
                             when (result) {
                                 is ResultState.Failure -> loginState =
-                                    loginState.copy(errorMessage = result.msg.localizedMessage,isLoading = false)
+                                    loginState.copy(
+                                        errorMessage = result.msg.localizedMessage,
+                                        isLoading = false
+                                    )
 
                                 ResultState.Loading -> loginState =
                                     loginState.copy(isLoading = true)
@@ -201,8 +226,10 @@ class LoginViewModel @Inject constructor(
                         }
                     }
                 } else {
-                    loginState = loginState.copy(validationError = "Fill the otp fields first!",isLoading = false)
-
+                    loginState = loginState.copy(
+                        validationError = "Fill the otp fields first!",
+                        isLoading = false
+                    )
                 }
             }
 
@@ -227,7 +254,7 @@ class LoginViewModel @Inject constructor(
             }
 
             is UserAuthAction.SaveUserProfile -> {
-                // take image , number and username form login state and save to db
+                // take image, number and username from login state and save to db
                 viewModelScope.launch {
                     repository.insertUser(
                         UserEntity(
@@ -237,10 +264,22 @@ class LoginViewModel @Inject constructor(
                         ), action.imageByteArray, action.imageUri
                     ).collect { result ->
                         loginState = when (result) {
-                            is ResultState.Failure -> loginState.copy(errorMessage = result.msg.localizedMessage,isLoading = false)
+                            is ResultState.Failure -> loginState.copy(
+                                errorMessage = result.msg.localizedMessage,
+                                isLoading = false
+                            )
+
                             ResultState.Loading -> loginState.copy(isLoading = true)
                             is ResultState.Success -> {
-                                loginState.copy(dataSaved = true, isLoading = false, imageUrl = result.data)
+                                val updatedState =
+                                    loginState.copy(isLoading = false, imageUrl = result.data)
+                                saveUserSession(
+                                    session = loginState.userSession!!,
+                                    userName = loginState.userName,
+                                    userImage = result.data,
+                                    userType = loginState.userType
+                                )
+                                updatedState
                             }
                         }
                     }
@@ -253,16 +292,14 @@ class LoginViewModel @Inject constructor(
 
             is UserAuthAction.UpdateConfirmPasswordVisible -> {
                 loginState = loginState.copy(confirmPasswordVisible = action.cpShow)
-
             }
 
             is UserAuthAction.UpdatePasswordVisible -> {
                 loginState = loginState.copy(passwordVisible = action.show)
-
             }
 
             UserAuthAction.LoginScreen -> {
-
+                // No implementation needed
             }
 
             is UserAuthAction.LoginUser -> {
@@ -274,7 +311,7 @@ class LoginViewModel @Inject constructor(
                         loginWithEmail(action.email, action.password).collect { result ->
                             when (result) {
                                 is ResultState.Failure -> {
-                                    Log.d("LOGIN",result.msg.localizedMessage)
+                                    Log.d("LOGIN", result.msg.localizedMessage)
 
                                     loginState =
                                         loginState.copy(
@@ -287,52 +324,67 @@ class LoginViewModel @Inject constructor(
                                     loginState.copy(isLoading = true)
 
                                 is ResultState.Success -> {
-                                    fetchUserDetails()
+                                    loginState = loginState.copy(userSession = result.data)
+                                    result.data?.let { fetchUserDetailsAndSaveSession(it) }
                                 }
                             }
                         }
                     }
                 } else {
-                    loginState = loginState.copy(validationError = validationResult.second, isLoading = false)
+                    loginState = loginState.copy(
+                        validationError = validationResult.second,
+                        isLoading = false
+                    )
                 }
             }
 
-            UserAuthAction.SignUpScreen -> {}
+            UserAuthAction.SignUpScreen -> {
+                // No implementation needed
+            }
+
             UserAuthAction.ClearValidationError -> {
                 loginState = loginState.copy(validationError = null)
             }
         }
     }
 
-    private fun fetchUserDetails() {
+    private fun fetchUserDetailsAndSaveSession(session: UserSession) {
         viewModelScope.launch {
             repository.fetchUserInfo().collect { userInformation ->
-                loginState = when (userInformation) {
+                when (userInformation) {
                     is ResultState.Failure -> {
-                        loginState.copy(
+                        loginState = loginState.copy(
                             isLoading = false,
                             errorMessage = userInformation.msg.localizedMessage
                         )
                     }
 
                     ResultState.Loading -> {
-                        loginState.copy(isLoading = true)
+                        loginState = loginState.copy(isLoading = true)
                     }
 
                     is ResultState.Success -> {
-                        loginState.copy(
+                        val user = userInformation.data
+                        saveUserSession(
+                            session = session,
+                            userName = user.name,
+                            userImage = user.imageUrl ?: "",
+                            userType = user.role
+                        )
+                        loginState = loginState.copy(
                             isLoading = false,
                             loginSuccess = true,
-                            userType = userInformation.data.role,
+                            userType = user.role,
                             errorMessage = null,
-                            userName = userInformation.data.name,
-                            imageUrl = userInformation.data.imageUrl
+                            userName = user.name,
+                            imageUrl = user.imageUrl
                         )
                     }
                 }
             }
         }
     }
+
 
     private fun getCurrentUserId(): String? {
         return supabaseClient.auth.currentUserOrNull()?.id

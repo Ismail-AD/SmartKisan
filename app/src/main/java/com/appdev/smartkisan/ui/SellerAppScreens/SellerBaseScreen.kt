@@ -34,7 +34,7 @@ import kotlinx.serialization.json.Json
 
 
 @Composable
-fun SellerBaseScreen() {
+fun SellerBaseScreen(onLogout: () -> Unit = {}) {
     val controller = rememberNavController()
     val hazeState = remember { HazeState() }
     var isSearchFocused by remember { mutableStateOf(false) }
@@ -92,7 +92,9 @@ fun SellerBaseScreen() {
             Modifier.padding(innerPadding)
         ) {
             composable(Routes.SellerHomeScreen.route) { SellerHomeScreen(controller) }
-            composable(Routes.SellerAccountScreen.route) { SellerProfileScreen() }
+            composable(Routes.SellerAccountScreen.route) { SellerProfileRoot{
+                onLogout()
+            } }
             composable(Routes.ChatInDetailScreen.route) {  }
             composable(Routes.StoreManagementScreen.route) {
                 StoreManagementRoot(
@@ -117,9 +119,7 @@ fun SellerBaseScreen() {
                 AddProductRoot(storeViewModel = storeViewModel, navHostController = controller)
             }
             composable(Routes.SellerInboxScreen.route) {
-                SellerChatScreen(controller) { state ->
-                    isSearchFocused = state
-                }
+                SellerChatScreenRoot(controller)
             }
             composable(route = Routes.ProductDetailScreen.route + "/{productJson}",
                 arguments = listOf(
