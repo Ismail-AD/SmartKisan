@@ -339,7 +339,7 @@ class LoginViewModel @Inject constructor(
             }
 
             UserAuthAction.SignUpScreen -> {
-                // No implementation needed
+
             }
 
             UserAuthAction.ClearValidationError -> {
