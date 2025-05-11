@@ -99,6 +99,32 @@ fun HomeRoot(
                 controller.navigate(Routes.NewsList.route)
             }
 
+            is HomeScreenActions.GoToMapScreen->{
+                if (locationPermissionState.status.isGranted) {
+                    val locationManager = context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
+                    val isLocationEnabled = LocationManagerCompat.isLocationEnabled(locationManager)
+                    if (isLocationEnabled) {
+                        controller.navigate(Routes.ShopsOnMap.route)
+                    } else {
+                        homeScreenViewModel.onAction(
+                            HomeScreenActions.UpdateLocationPermission(
+                                LocationPermissionState.LOCATION_DISABLED
+                            )
+                        )
+                    }
+                } else if (!locationPermissionState.status.isGranted &&
+                    !locationPermissionState.status.shouldShowRationale
+                ) {
+                    homeScreenViewModel.onAction(
+                        HomeScreenActions.UpdateLocationPermission(
+                            LocationPermissionState.PERMANENTLY_DENIED
+                        )
+                    )
+                } else {
+                    locationPermissionState.launchPermissionRequest()
+                }
+            }
+
 
             is HomeScreenActions.RequestWeatherUpdate -> {
                 if (locationPermissionState.status.isGranted) {
@@ -285,6 +311,13 @@ fun HomeScreen(weatherState: WeatherState, onAction: (HomeScreenActions) -> Unit
                     iconResId = R.drawable.news,
                     iconContentDescription = "news",
                     onClick = { onAction(HomeScreenActions.GoToNewsScreen) },
+                    lightModeColor = myGreen
+                )
+                ActionCard(
+                    title = "Shops Nearby your location",
+                    iconResId = R.drawable.pin,
+                    iconContentDescription = "shopsnearby",
+                    onClick = { onAction(HomeScreenActions.GoToMapScreen) },
                     lightModeColor = myGreen
                 )
 

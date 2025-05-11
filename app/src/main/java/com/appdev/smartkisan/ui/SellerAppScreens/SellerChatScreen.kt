@@ -155,7 +155,7 @@ fun SellerChatScreen(
                                 ) {
                                     onAction(ChatListActions.MessageAUser(
                                         receiverId = eachContact.partnerId ?: "",
-                                        name = eachContact.receiverName,
+                                        name = eachContact.receiverName ?:"",
                                         profilePic = eachContact.receiverImage ?: ""
                                     ))
                                 }
@@ -198,7 +198,7 @@ fun ListRowData(chatMateData: ChatMateData, onClick: () -> Unit) {
             modifier = Modifier.fillMaxWidth(0.7f)
         ) {
             Text(
-                text = chatMateData.receiverName,
+                text = chatMateData.receiverName ?:"",
                 fontSize = 17.sp,
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onBackground

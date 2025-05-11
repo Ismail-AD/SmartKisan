@@ -11,6 +11,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -29,6 +30,25 @@ class RecentChatsViewModel @Inject constructor(
         onAction(ChatListActions.GetMyMessages)
     }
 
+    fun deleteChat(receiverId: String) {
+        viewModelScope.launch {
+            chatRepository.deleteChat(receiverId).collectLatest { result ->
+                when (result) {
+                    is ResultState.Success -> {
+                        // The chat is now deleted and the real-time listener should update the UI
+                        _state.value = _state.value.copy(error = null)
+                    }
+
+                    is ResultState.Failure -> {
+                        _state.value  = _state.value.copy(error = result.msg.localizedMessage)
+                    }
+
+                    else -> {}
+                }
+            }
+        }
+    }
+
     fun onAction(action: ChatListActions) {
         when (action) {
             is ChatListActions.CurrentSelectedTab -> {
@@ -43,6 +63,7 @@ class RecentChatsViewModel @Inject constructor(
             is ChatListActions.SearchChats -> {
                 searchChats(action.query)
             }
+
             is ChatListActions.UpdateQuery -> {
                 _state.value = _state.value.copy(query = action.query)
             }
@@ -55,6 +76,9 @@ class RecentChatsViewModel @Inject constructor(
                 loadRecentChats()
             }
 
+            is ChatListActions.DeleteChat ->{
+                deleteChat(action.receiverId)
+            }
             else -> {
 
             }
@@ -101,7 +125,8 @@ class RecentChatsViewModel @Inject constructor(
         }
 
         val filteredList = _state.value.recentMessages.filter { chatMate ->
-            chatMate.receiverName.contains(query, ignoreCase = true) ||
+            // Safe call operator for nullable receiverName
+            (chatMate.receiverName?.contains(query, ignoreCase = true) == true) ||
                     (chatMate.lastMessage?.contains(query, ignoreCase = true) == true)
         }
 

@@ -12,4 +12,5 @@ interface HomeScreenActions {
     object DismissLocationDialog : HomeScreenActions
     object RequestCurrentLocation : HomeScreenActions
     object RequestWeatherUpdate : HomeScreenActions
+    object GoToMapScreen : HomeScreenActions
 }

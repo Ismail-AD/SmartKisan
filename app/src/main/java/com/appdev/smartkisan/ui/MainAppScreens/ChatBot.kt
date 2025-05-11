@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -53,6 +54,9 @@ import androidx.compose.material.icons.rounded.AddPhotoAlternate
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalFocusManager
@@ -62,7 +66,12 @@ import coil3.compose.AsyncImage
 import com.appdev.smartkisan.Actions.ChatBotScreenActions
 import com.appdev.smartkisan.States.ChatBotUiState
 import com.appdev.smartkisan.ViewModel.ChatBotViewModel
+import com.appdev.smartkisan.data.BotChatMessage
+import com.appdev.smartkisan.ui.OtherComponents.BotMessageItem
 import com.appdev.smartkisan.ui.OtherComponents.MessageItem
+import com.appdev.smartkisan.ui.OtherComponents.NoDialogLoader
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 @Composable
 fun ChatBotRoot(
@@ -93,6 +102,19 @@ fun ChatBotScreen(uiState: ChatBotUiState, onAction: (ChatBotScreenActions) -> U
         }
     }
 
+    // LazyListState for scrolling control
+    val listState = rememberLazyListState()
+    val coroutineScope = rememberCoroutineScope()
+
+    // Auto-scroll logic when messages are updated
+    LaunchedEffect(key1 = uiState.shouldScrollToBottom, key2 = uiState.listOfMessages.size) {
+        if (uiState.shouldScrollToBottom && uiState.listOfMessages.isNotEmpty()) {
+            coroutineScope.launch {
+                listState.animateScrollToItem(uiState.listOfMessages.size )
+            }
+        }
+    }
+
     Scaffold(topBar = {
         TopAppBar(navigationIcon = {
             Card(onClick = {
@@ -114,7 +136,7 @@ fun ChatBotScreen(uiState: ChatBotUiState, onAction: (ChatBotScreenActions) -> U
                 fontSize = 19.sp,
                 fontWeight = FontWeight.Bold
             )
-        })
+        },colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent))
     }, bottomBar = {
         Column(
             modifier = Modifier
@@ -153,7 +175,7 @@ fun ChatBotScreen(uiState: ChatBotUiState, onAction: (ChatBotScreenActions) -> U
                                     .background(MaterialTheme.colorScheme.surfaceVariant)
                                     .align(Alignment.TopEnd)
                                     .clickable {
-                                        if (!uiState.isLoading) {
+                                        if (!uiState.isSendingMessage) {
                                             onAction(
                                                 ChatBotScreenActions.RemoveImage(
                                                     imageUri
@@ -213,7 +235,7 @@ fun ChatBotScreen(uiState: ChatBotUiState, onAction: (ChatBotScreenActions) -> U
                             .fillMaxWidth()
                             .padding(horizontal = 40.dp)
                             .heightIn(min = 56.dp, max = 170.dp), // Padding to make space for icons
-                        shape = RoundedCornerShape(0.dp), enabled = !uiState.isLoading
+                        shape = RoundedCornerShape(0.dp), enabled = !uiState.isSendingMessage
                     )
 
                     // Add image button - aligned to bottom start
@@ -226,7 +248,7 @@ fun ChatBotScreen(uiState: ChatBotUiState, onAction: (ChatBotScreenActions) -> U
                             onClick = {
                                 multiplePhotoPickerLauncher.launch("image/*")
                             },
-                            modifier = Modifier.size(40.dp), enabled = !uiState.isLoading
+                            modifier = Modifier.size(40.dp), enabled = !uiState.isSendingMessage
                         ) {
                             Icon(
                                 imageVector = Icons.Rounded.AddPhotoAlternate,
@@ -254,9 +276,9 @@ fun ChatBotScreen(uiState: ChatBotUiState, onAction: (ChatBotScreenActions) -> U
                                     color = Color(0xff68BB59),
                                     shape = CircleShape
                                 )
-                                .size(36.dp), enabled = !uiState.isLoading
+                                .size(36.dp), enabled = !uiState.isSendingMessage
                         ) {
-                            when (uiState.isLoading) {
+                            when (uiState.isSendingMessage) {
                                 true -> {
                                     CircularProgressIndicator(
                                         color = Color.White,
@@ -285,8 +307,12 @@ fun ChatBotScreen(uiState: ChatBotUiState, onAction: (ChatBotScreenActions) -> U
                 .background(MaterialTheme.colorScheme.background)
                 .padding(innerPadding)
         ) {
-            if (uiState.listOfMessages.isNotEmpty()) {
+            if (uiState.isLoadingInitialData) {
+                // Show loading indicator for initial data loading
+                NoDialogLoader("Loading Chat...")
+            } else if (uiState.listOfMessages.isNotEmpty()) {
                 LazyColumn(
+                    state = listState,
                     modifier = Modifier
                         .fillMaxWidth()
                         .fillMaxSize(),
@@ -294,9 +320,9 @@ fun ChatBotScreen(uiState: ChatBotUiState, onAction: (ChatBotScreenActions) -> U
                 ) {
                     items(
                         items = uiState.listOfMessages,
-                        key = { eachMessage -> eachMessage.timeStamp ?: 0L }
+                        key = { eachMessage -> eachMessage.id ?: 0L }
                     ) { eachMessage ->
-                        MessageItem(eachMessage)
+                        BotMessageItem(eachMessage)
                     }
                 }
             } else {
@@ -336,7 +362,6 @@ fun ChatBotScreen(uiState: ChatBotUiState, onAction: (ChatBotScreenActions) -> U
                     }
                 }
             }
-
         }
     }
 }

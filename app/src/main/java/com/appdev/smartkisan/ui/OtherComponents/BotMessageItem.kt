@@ -13,15 +13,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.text.AnnotatedString
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
-import com.appdev.smartkisan.data.Chat
+import com.appdev.smartkisan.data.BotChatMessage
 import com.appdev.smartkisan.data.ChatRoleEnum
 
 // Define your custom colors here - adjust as needed to match your app
@@ -29,20 +24,20 @@ private val myGreen = Color(0xFF68BB59)
 private val lightBlue = Color(0xFFE6F7F9)
 
 @Composable
-fun MessageItem(chat: Chat) {
+fun BotMessageItem(botMessage: BotChatMessage) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .padding(top = 10.dp, end = 10.dp, start = 10.dp),
-        horizontalAlignment = if (chat.role == ChatRoleEnum.USER.value) Alignment.End else Alignment.Start
+        horizontalAlignment = if (botMessage.role == ChatRoleEnum.USER.value) Alignment.End else Alignment.Start
     ) {
         // First display images (if present and it's a user message)
-        if (chat.images.isNotEmpty() && chat.role == ChatRoleEnum.USER.value) {
-            when (chat.images.size) {
+        if (botMessage.imageUrls.isNotEmpty() && botMessage.role == ChatRoleEnum.USER.value) {
+            when (botMessage.imageUrls.size) {
                 1 -> {
                     // Single image
                     AsyncImage(
-                        model = chat.images.first(),
+                        model = botMessage.imageUrls.first(),
                         contentDescription = "Attached image",
                         modifier = Modifier
                             .padding(bottom = 4.dp)
@@ -65,7 +60,7 @@ fun MessageItem(chat: Chat) {
                         modifier = Modifier.padding(bottom = 4.dp),
                         horizontalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
-                        items(chat.images) { uri ->
+                        items(botMessage.imageUrls) { uri ->
                             AsyncImage(
                                 model = uri,
                                 contentDescription = "Attached image",
@@ -81,17 +76,17 @@ fun MessageItem(chat: Chat) {
         }
 
         // Display message text if not empty - using your existing style
-        if (chat.message.isNotBlank()) {
+        if (botMessage.message.isNotBlank()) {
             Box(
                 modifier = Modifier
                     .widthIn(max = 300.dp)
                     .background(
-                        if (chat.role == ChatRoleEnum.USER.value) myGreen else if (isSystemInDarkTheme()) Color(
+                        if (botMessage.role == ChatRoleEnum.USER.value) myGreen else if (isSystemInDarkTheme()) Color(
                             0xFFAFD7DC
                         ) else lightBlue,
                         RoundedCornerShape(
-                            topEnd = if (chat.role == ChatRoleEnum.USER.value) 0.dp else 10.dp,
-                            topStart = if (chat.role == ChatRoleEnum.USER.value) 10.dp else 0.dp,
+                            topEnd = if (botMessage.role == ChatRoleEnum.USER.value) 0.dp else 10.dp,
+                            topStart = if (botMessage.role == ChatRoleEnum.USER.value) 10.dp else 0.dp,
                             bottomEnd = 10.dp,
                             bottomStart = 10.dp
                         )
@@ -99,28 +94,13 @@ fun MessageItem(chat: Chat) {
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = formatMessageWithBoldText(chat.message),
+                    text = formatMessageWithBoldText(botMessage.message),
                     fontSize = 15.sp,
-                    color = if (chat.role == ChatRoleEnum.USER.value) Color.White else Color.Black.copy(
+                    color = if (botMessage.role == ChatRoleEnum.USER.value) Color.White else Color.Black.copy(
                         alpha = 0.9f
                     ),
                     modifier = Modifier.padding(horizontal = 20.dp, vertical = 10.dp)
                 )
-            }
-        }
-    }
-}
-
-fun formatMessageWithBoldText(message: String): AnnotatedString {
-    return buildAnnotatedString {
-        val segments = message.split("**")
-        segments.forEachIndexed { index, segment ->
-            if (index % 2 == 0) {
-                append(segment)
-            } else {
-                withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
-                    append(segment)
-                }
             }
         }
     }

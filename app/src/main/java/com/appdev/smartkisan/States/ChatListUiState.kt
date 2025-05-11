@@ -12,5 +12,6 @@ data class ChatListUiState(
     val chatWithList: List<UserEntity> = emptyList(),
     val currentTab: Int = 0,
     val query: String = "",
-    val error: String? = null
+    val error: String? = null,
+
 )

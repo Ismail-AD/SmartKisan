@@ -6,6 +6,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
@@ -18,6 +19,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.LazyRow
@@ -26,8 +28,10 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccessTime
 import androidx.compose.material.icons.rounded.AddPhotoAlternate
 import androidx.compose.material.icons.rounded.Close
+import androidx.compose.material.icons.rounded.Warning
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -48,14 +52,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.focus.FocusManager
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalFocusManager
-import androidx.compose.ui.platform.LocalSoftwareKeyboardController
-import androidx.compose.ui.platform.SoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -72,8 +74,8 @@ import com.appdev.smartkisan.Actions.ChatActions
 import com.appdev.smartkisan.R
 import com.appdev.smartkisan.States.ChatUiState
 import com.appdev.smartkisan.Utils.Functions
-import com.appdev.smartkisan.Utils.SessionManagement
-import com.appdev.smartkisan.ViewModel.ChatMessagesViewModel
+import com.appdev.smartkisan.Utils.MessageStatus
+import com.appdev.smartkisan.ViewModel.UserChatViewModel
 import com.appdev.smartkisan.data.ChatMessage
 import com.appdev.smartkisan.ui.theme.lightBlue
 import com.appdev.smartkisan.ui.theme.myGreen
@@ -81,11 +83,25 @@ import com.appdev.smartkisan.ui.theme.myGreen
 
 @Composable
 fun ChatMessagesRoot(
+    userId: String,
+    userName: String,
+    profilePic: String?,
     controller: NavHostController,
-    chatMessagesViewModel: ChatMessagesViewModel = hiltViewModel()
+    chatMessagesViewModel: UserChatViewModel = hiltViewModel()
 ) {
     val state by chatMessagesViewModel.state.collectAsStateWithLifecycle()
 
+    LaunchedEffect(key1 = Unit) {
+        if (state.receiverId.isNullOrEmpty()) {
+            chatMessagesViewModel.onAction(
+                ChatActions.SetReceiverInfo(
+                    receiverId = userId,
+                    receiverName = userName,
+                    receiverProfilePic = profilePic
+                )
+            )
+        }
+    }
     InDetailChatScreen(state, chatMessagesViewModel.currentUserId) { action ->
         when (action) {
             ChatActions.GoBack -> {
@@ -120,7 +136,7 @@ fun InDetailChatScreen(state: ChatUiState, currentUserId: String, onAction: (Cha
     }
 
     Scaffold(topBar = {
-        ChatTopBar(name = state.receiverName, profilePic = state.receiverProfilePic) {
+        ChatTopBar(name = state.receiverName ?: "", profilePic = state.receiverProfilePic) {
             onAction.invoke(ChatActions.GoBack)
         }
     }, bottomBar = {
@@ -142,7 +158,7 @@ fun InDetailChatScreen(state: ChatUiState, currentUserId: String, onAction: (Cha
                     LoadingChatState(modifier = Modifier.align(Alignment.Center))
                 }
                 // Show empty state when no messages
-                state.messages.isEmpty() -> {
+                !state.isLoading && state.messages.isEmpty() -> {
                     EmptyChatState(modifier = Modifier.align(Alignment.Center))
                 }
                 // Show messages
@@ -151,7 +167,7 @@ fun InDetailChatScreen(state: ChatUiState, currentUserId: String, onAction: (Cha
                         messages = state.messages,
                         currentUserId = currentUserId,
                         listState = listState,
-                        state.receiverId
+                        state.receiverId ?: ""
                     )
                 }
             }
@@ -247,41 +263,35 @@ fun ChatMessagesList(
  */
 @Composable
 fun MessageItem(message: ChatMessage, currentUserId: String, isCurrentUser: Boolean) {
+    val backgroundColor =
+        if (isCurrentUser) myGreen else if (isSystemInDarkTheme()) Color(0xFFAFD7DC) else lightBlue
+    val textColor = if (isCurrentUser) Color.White else Color.Black.copy(alpha = 0.9f)
 
     Column(
         modifier = Modifier
-            .fillMaxWidth()
+            .widthIn(max = 300.dp)
             .padding(vertical = 4.dp, horizontal = 8.dp),
         horizontalAlignment = if (isCurrentUser) Alignment.End else Alignment.Start
     ) {
         when {
-            // Image message
-//            !message.imageUrl.isNullOrEmpty() -> {
-//                ImageMessageBubble(
-//                    message = message,
-//                    isCurrentUser = isCurrentUser,
-//                    backgroundColor = backgroundColor
-//                )
-//            }
-
-            // Text message
+            // Message with images
+            message.imageUrls?.isNotEmpty() == true -> {
+                ImageMessageBubble(
+                    message = message,
+                    isCurrentUser = isCurrentUser,
+                    backgroundColor = backgroundColor,
+                    textColor = textColor
+                )
+            }
+            // Text-only message
             !message.message.isNullOrEmpty() -> {
                 TextMessageBubble(
                     message = message,
                     isCurrentUser = isCurrentUser,
-                    backgroundColor = if (isCurrentUser)
-                        myGreen
-                    else if (isSystemInDarkTheme())
-                        Color(0xFFAFD7DC)
-                    else
-                        lightBlue,
-                    textColor = if (isCurrentUser)
-                        Color.White
-                    else
-                        Color.Black.copy(alpha = 0.9f)
+                    backgroundColor = backgroundColor,
+                    textColor = textColor
                 )
             }
-
         }
 
         // Timestamp for all message types
@@ -295,47 +305,13 @@ fun MessageItem(message: ChatMessage, currentUserId: String, isCurrentUser: Bool
     }
 }
 
-/**
- * Text message bubble
- */
-@Composable
-fun TextMessageBubble(
-    message: ChatMessage,
-    isCurrentUser: Boolean,
-    backgroundColor: Color,
-    textColor: Color
-) {
-    Box(
-        modifier = Modifier
-            .clip(
-                RoundedCornerShape(
-                    topStart = if (isCurrentUser) 10.dp else 0.dp,
-                    topEnd = if (isCurrentUser) 0.dp else 10.dp,
-                    bottomStart = 10.dp,
-                    bottomEnd = 10.dp
-                )
-            )
-            .background(backgroundColor)
-            .padding(horizontal = 12.dp, vertical = 8.dp)
-    ) {
-        Text(
-            text = message.message ?: "",
-            style = TextStyle(
-                fontSize = 15.sp,
-                color = textColor
-            )
-        )
-    }
-}
-
-/**
- * Image message bubble
- */
+// The ImageMessageBubble composable with pending indicator support
 @Composable
 fun ImageMessageBubble(
     message: ChatMessage,
     isCurrentUser: Boolean,
-    backgroundColor: Color
+    backgroundColor: Color,
+    textColor: Color
 ) {
     Card(
         shape = RoundedCornerShape(
@@ -347,29 +323,128 @@ fun ImageMessageBubble(
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
         colors = CardDefaults.cardColors(containerColor = backgroundColor)
     ) {
-        Column(modifier = Modifier.padding(8.dp)) {
-            // Image
-//            AsyncImage(
-//                model = ImageRequest.Builder(LocalContext.current)
-//                    .data(message.imageUrl)
-//                    .crossfade(true)
-//                    .build(),
-//                contentDescription = "Message Image",
-//                contentScale = ContentScale.FillWidth,
-//                modifier = Modifier
-//                    .size(200.dp)
-//                    .clip(RoundedCornerShape(8.dp))
-//            )
+        Box {
+            Column(modifier = Modifier.padding(8.dp)) {
+                // Display images in a grid with dimmed alpha if pending
+                if (message.imageUrls.isNotEmpty()) {
+                    LazyRow(
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                        modifier = Modifier.padding(bottom = if (message.message.isNullOrEmpty()) 0.dp else 8.dp)
+                    ) {
+                        items(message.imageUrls) { imageUrl ->
+                            Box {
+                                AsyncImage(
+                                    model = ImageRequest.Builder(LocalContext.current)
+                                        .data(imageUrl)
+                                        .crossfade(true)
+                                        .build(),
+                                    contentDescription = "Message Image",
+                                    contentScale = ContentScale.Crop,
+                                    modifier = Modifier
+                                        .size(150.dp)
+                                        .clip(RoundedCornerShape(4.dp))
+                                        .alpha(if (message.status == MessageStatus.PENDING.name) 0.7f else 1f)
+                                )
 
-            // Optional text with image
-            if (!message.message.isNullOrEmpty()) {
-                Text(
-                    text = message.message,
-                    style = TextStyle(
-                        fontSize = 15.sp,
-                        color = if (isCurrentUser) Color.White else Color.Black.copy(alpha = 0.9f)
-                    ),
-                    modifier = Modifier.padding(top = 8.dp)
+                                // Show outline if image is pending
+                                if (message.status == MessageStatus.PENDING.name) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(150.dp)
+                                            .clip(RoundedCornerShape(4.dp))
+                                            .border(
+                                                width = 1.dp,
+                                                color = if (isSystemInDarkTheme()) Color.White.copy(
+                                                    alpha = 0.3f
+                                                )
+                                                else Color.Black.copy(alpha = 0.2f),
+                                                shape = RoundedCornerShape(4.dp)
+                                            )
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Optional text with image
+                if (!message.message.isNullOrEmpty()) {
+                    Text(
+                        text = message.message,
+                        style = TextStyle(
+                            fontSize = 15.sp,
+                            color = textColor
+                        ),
+                        modifier = Modifier.padding(top = if (message.imageUrls.isNotEmpty()) 8.dp else 0.dp)
+                    )
+                }
+            }
+
+            // Show pending or error indicator
+            if (message.status == MessageStatus.PENDING.name) {
+                Box(
+                    modifier = Modifier
+                        .align(if (isCurrentUser) Alignment.BottomEnd else Alignment.BottomStart)
+                        .padding(6.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.AccessTime,
+                        contentDescription = "pending",
+                        tint = if (isCurrentUser) Color.White.copy(alpha = 0.8f)
+                        else Color.Black.copy(alpha = 0.5f),
+                        modifier = Modifier.size(16.dp)
+                    )
+                }
+            }
+        }
+    }
+}
+
+// Also update the TextMessageBubble to handle pending state
+@Composable
+fun TextMessageBubble(
+    message: ChatMessage,
+    isCurrentUser: Boolean,
+    backgroundColor: Color,
+    textColor: Color
+) {
+    Box {
+        Box(
+            modifier = Modifier
+                .clip(
+                    RoundedCornerShape(
+                        topStart = if (isCurrentUser) 10.dp else 0.dp,
+                        topEnd = if (isCurrentUser) 0.dp else 10.dp,
+                        bottomStart = 10.dp,
+                        bottomEnd = 10.dp
+                    )
+                )
+                .background(backgroundColor)
+                .padding(horizontal = 12.dp, vertical = 8.dp)
+        ) {
+            Text(
+                text = message.message ?: "",
+                style = TextStyle(
+                    fontSize = 15.sp,
+                    color = textColor
+                ),
+                modifier = Modifier.alpha(if (message.status == MessageStatus.PENDING.name) 0.7f else 1f)
+            )
+        }
+
+        // Show pending or error indicator
+        if (message.status == MessageStatus.PENDING.name) {
+            Box(
+                modifier = Modifier
+                    .align(if (isCurrentUser) Alignment.BottomEnd else Alignment.BottomStart)
+                    .padding(4.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.AccessTime,
+                    contentDescription = "pending",
+                    tint = if (isCurrentUser) Color.White.copy(alpha = 0.8f)
+                    else Color.Black.copy(alpha = 0.5f),
+                    modifier = Modifier.size(16.dp)
                 )
             }
         }
@@ -602,7 +677,7 @@ fun ChatInputField(
                         .padding(end = 8.dp, bottom = 8.dp)
                         .background(color = Color(0xff68BB59), shape = CircleShape)
                         .size(36.dp),
-                    enabled = !uiState.isLoading
+                    enabled = !uiState.isLoading && (uiState.messageInput.isNotBlank() || uiState.selectedImageUris.isNotEmpty())
                 ) {
                     Icon(
                         painter = painterResource(R.drawable.send),
@@ -611,7 +686,6 @@ fun ChatInputField(
                         modifier = Modifier.size(18.dp)
                     )
                 }
-
             }
         }
     }

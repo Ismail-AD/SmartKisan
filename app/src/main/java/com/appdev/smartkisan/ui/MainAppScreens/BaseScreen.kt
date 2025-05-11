@@ -63,8 +63,8 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.appdev.smartkisan.Actions.ChatActions
 import com.appdev.smartkisan.Utils.DateTimeUtils
-import com.appdev.smartkisan.ViewModel.ChatMessagesViewModel
 import com.appdev.smartkisan.ViewModel.NewsViewModel
+import com.appdev.smartkisan.ViewModel.UserChatViewModel
 import com.appdev.smartkisan.data.New
 import com.appdev.smartkisan.data.Product
 import com.appdev.smartkisan.ui.SharedScreens.ChatMessagesRoot
@@ -75,7 +75,7 @@ import kotlinx.serialization.json.Json
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun BaseScreen() {
+fun BaseScreen(onLogout: () -> Unit = {}) {
     val controller = rememberNavController()
     val hazeState = remember { HazeState() }
 
@@ -84,6 +84,7 @@ fun BaseScreen() {
         Routes.ProductDetailScreen.route + "/{productJson}", Routes.DiagnosisResult.route,
         Routes.ChatBotScreen.route,
         Routes.NewsList.route,
+        Routes.ShopsOnMap.route,
         Routes.NewsDetails.route+"/{newsJson}",
         Routes.UserChatListScreen.route,
         Routes.ChatInDetailScreen.route + "/{receiverId}/{name}/{profilePic}"
@@ -144,9 +145,12 @@ fun BaseScreen() {
                 )
             }
             composable(Routes.AccountScreen.route) {
-                AccountRoot(controller)
+                UserAccountRoot (controller){
+                    onLogout()
+                }
             }
             composable(Routes.MarketPlace.route) { MarketPlaceRoot(controller) }
+            composable(Routes.ShopsOnMap.route) { MapRootScreen(controller) }
             composable(Routes.PlantDisease.route) { PlantDiseaseRoot(controller) }
             composable(Routes.UserChatListScreen.route) { ChatListRoot(controller) }
             composable(
@@ -154,23 +158,23 @@ fun BaseScreen() {
                 arguments = listOf(
                     navArgument("receiverId") { type = NavType.StringType },
                     navArgument("name") { type = NavType.StringType },
-                    navArgument("profilePic") { type = NavType.StringType }
+                    navArgument("profilePic") {
+                        type = NavType.StringType
+                        // This allows the profilePic parameter to contain slashes
+                        nullable = false
+                    }
                 )
             ) { backStackEntry ->
                 val userId = backStackEntry.arguments?.getString("receiverId") ?: ""
                 val username = backStackEntry.arguments?.getString("name") ?: ""
-                val profilePic = backStackEntry.arguments?.getString("profilePic") ?: ""
-                val chatMessagesViewModel: ChatMessagesViewModel = hiltViewModel()
-                chatMessagesViewModel.onAction(
-                    ChatActions.SetReceiverInfo(
-                        receiverId = userId,
-                        receiverName = username,
-                        receiverProfilePic = profilePic
-                    )
-                )
+                val encodedProfilePic = backStackEntry.arguments?.getString("profilePic") ?: ""
+                val profilePic = Uri.decode(encodedProfilePic)
+
                 ChatMessagesRoot(
+                    userId,
+                    username,
+                    profilePic,
                     controller = controller,
-                    chatMessagesViewModel
                 )
             }
 

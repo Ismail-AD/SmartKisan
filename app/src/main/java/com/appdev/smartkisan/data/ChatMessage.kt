@@ -8,5 +8,6 @@ data class ChatMessage(
     val senderID: String? = "",
     val timeStamp: Long? = 0,
     val isRead: Boolean = false,
-    val status: String? = "",
+    val status: String? = MessageStatus.PENDING.name,
+    val imageUrls: List<String> = emptyList()
 )

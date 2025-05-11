@@ -11,4 +11,9 @@ sealed interface ChatBotScreenActions {
     data object ClearSelectedImages : ChatBotScreenActions
     data object ClearMessage : ChatBotScreenActions
     data class SendPrompt(val prompt: String) : ChatBotScreenActions
+
+    data object LoadMoreMessages : ChatBotScreenActions
+    data class LoadMessagesByDate(val date: String) : ChatBotScreenActions
+    data object ReturnToToday : ChatBotScreenActions
+    data object ToggleDateSelector : ChatBotScreenActions
 }

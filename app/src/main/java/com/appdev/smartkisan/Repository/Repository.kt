@@ -35,6 +35,39 @@ class Repository @Inject constructor(
     private val productImageBucketId = "productImages"
     private val productImageFolderPath = "public/cel5c7_0"
 
+    fun getAllSellersWithLocations(): Flow<ResultState<List<SellerMetaData>>> = flow {
+        emit(ResultState.Loading)
+        try {
+            val sellerMetaDataList = supabaseClient
+                .from("sellersData")
+                .select()
+                .decodeList<SellerMetaData>()
+                .filter { it.latitude != 0.0 && it.longitude != 0.0 }
+
+            emit(ResultState.Success(sellerMetaDataList))
+        } catch (e: Exception) {
+            Log.e("Repository", "Failed to fetch sellers metadata: ${e.message}")
+            emit(ResultState.Failure(e))
+        }
+    }
+
+
+
+    // Add this function to fetch a specific user by ID
+    fun fetchUserById(userId: String): Flow<ResultState<UserEntity>> = flow {
+        emit(ResultState.Loading)
+        try {
+            val user = supabaseClient.from("users").select {
+                filter {
+                    eq("id", userId)
+                }
+            }.decodeSingle<UserEntity>()
+            emit(ResultState.Success(user))
+        } catch (e: Exception) {
+            Log.e("Repository", "Failed to fetch user by ID: ${e.message}")
+            emit(ResultState.Failure(e))
+        }
+    }
 
     fun getAllProducts(): Flow<ResultState<List<Product>>> = flow {
         getCurrentUserId()?.let { uid ->
@@ -614,7 +647,7 @@ class Repository @Inject constructor(
             }
         }
 
-    private fun getCurrentUserId(): String? {
+    fun getCurrentUserId(): String? {
         return supabaseClient.auth.currentUserOrNull()?.id
     }
 }

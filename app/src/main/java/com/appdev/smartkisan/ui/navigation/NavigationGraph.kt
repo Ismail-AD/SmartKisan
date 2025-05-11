@@ -115,7 +115,12 @@ fun NavGraph(
                 }
             }
             composable(route = Routes.Main.route) {
-                BaseScreen()
+                BaseScreen{
+                    controller.navigate(Routes.Login.route) {
+                        // Clear the entire back stack
+                        popUpTo(0) { inclusive = true }
+                    }
+                }
             }
             composable(route = Routes.SellerMain.route) {
                 SellerBaseScreen{

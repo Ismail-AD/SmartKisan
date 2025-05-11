@@ -1,5 +1,6 @@
 package com.appdev.smartkisan.ui.MainAppScreens
 
+import android.net.Uri
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
@@ -71,7 +72,8 @@ fun ChatListRoot(
     ChatListScreen(state) { action ->
         when (action) {
             is ChatListActions.MessageAUser -> {
-                controller.navigate(Routes.ChatInDetailScreen.route + "/${action.receiverId}/${action.name}/${action.profilePic}")
+                val encodedProfilePic = Uri.encode(action.profilePic)
+                controller.navigate(Routes.ChatInDetailScreen.route + "/${action.receiverId}/${action.name}/${encodedProfilePic}")
             }
 
             else -> recentChatsViewModel.onAction(action)

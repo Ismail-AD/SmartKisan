@@ -10,4 +10,5 @@ sealed interface ChatListActions {
     data class SearchChats(val query: String) : ChatListActions
     data class UpdateQuery(val query: String) : ChatListActions
     data class CurrentSelectedTab(val selectedTab: Int) : ChatListActions
+    data class DeleteChat(val receiverId: String) : ChatListActions
 }
