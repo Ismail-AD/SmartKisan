@@ -1,0 +1,94 @@
+
+fun classifyDisease(context: Context, bitmap: Bitmap): Pair<String, Float>? {
+    val TAG = "AppleDiseaseClassifier"
+
+    // Define the apple disease classes directly in code to avoid metadata dependency
+//    val classes = listOf(
+//        "Apple___Apple_scab",
+//        "Apple___Black_rot",
+//        "Apple___Cedar_apple_rust",
+//        "Apple___healthy"
+//    )
+
+    val classes=  listOf(
+                    "Grape___Black_rot",
+                    "Grape___Esca_(Black_Measles)",
+                    "Grape___Leaf_blight_(Isariopsis_Leaf_Spot)",
+                    "Grape___healthy"
+                )
+
+    try {
+        // Model expects 224x224 RGB images
+        val inputWidth = 224
+        val inputHeight = 224
+        val channels = 3
+
+        // IMPORTANT FIX: Convert HARDWARE bitmap to a mutable, CPU-accessible bitmap
+        // Create a copy that's not hardware accelerated
+        val bitmapCopy = bitmap.copy(Bitmap.Config.ARGB_8888, true)
+
+        // Preprocess bitmap
+        val resized = Bitmap.createScaledBitmap(bitmapCopy, inputWidth, inputHeight, true)
+
+        // Allocate ByteBuffer for input tensor
+        val inputBuffer = ByteBuffer.allocateDirect(4 * inputWidth * inputHeight * channels)
+        inputBuffer.order(ByteOrder.nativeOrder())
+
+        // Normalize pixel values to [0, 1]
+        for (y in 0 until inputHeight) {
+            for (x in 0 until inputWidth) {
+                val pixel = resized.getPixel(x, y)
+
+                // Extract and normalize RGB values (scale from 0-255 to 0-1)
+                inputBuffer.putFloat(((pixel shr 16 and 0xFF) / 255.0f)) // R
+                inputBuffer.putFloat(((pixel shr 8 and 0xFF) / 255.0f))  // G
+                inputBuffer.putFloat(((pixel and 0xFF) / 255.0f))        // B
+            }
+        }
+
+        // Reset position to start for reading
+        inputBuffer.rewind()
+
+        // Load TFLite model
+        val model = FileUtil.loadMappedFile(context, "grapes_disease_model.tflite")
+        val interpreter = Interpreter(model)
+
+        // Prepare output buffer (4 classes)
+        val numClasses = classes.size
+        val outputBuffer = Array(1) { FloatArray(numClasses) }
+
+        // Run inference
+        interpreter.run(inputBuffer, outputBuffer)
+
+        // Find top prediction
+        val confidences = outputBuffer[0]
+        var maxIdx = 0
+        var maxConfidence = confidences[0]
+
+        for (i in 1 until numClasses) {
+            if (confidences[i] > maxConfidence) {
+                maxIdx = i
+                maxConfidence = confidences[i]
+            }
+        }
+
+        // Get readable disease name (remove underscores for better display)
+        val readableLabel = when(val rawLabel = classes[maxIdx]) {
+            "Grape___Black_rot" -> "Black Rot"
+            "Grape___Esca_(Black_Measles)" -> "Esca (Black Measles)"
+            "Grape___Leaf_blight_(Isariopsis_Leaf_Spot)" -> "Leaf Blight (Isariopsis Leaf Spot)"
+            "Grape___healthy" -> "Healthy"
+            else -> rawLabel.replace("Grape___", "").replace("_", " ")
+        }
+
+        // Clean up resources
+        interpreter.close()
+
+        Log.d(TAG, "Classification result: $readableLabel with confidence: ${maxConfidence * 100}%")
+        return Pair(readableLabel, maxConfidence)
+    } catch (e: Exception) {
+        Log.e(TAG, "Error classifying disease: ${e.message}")
+        e.printStackTrace()
+        return null
+    }
+}
