@@ -23,17 +23,36 @@ private val DarkColorScheme = darkColorScheme(
     background = Color.Black, onBackground = Color.White,
     surface = Color(0xDF0E3636),
     inverseOnSurface = Color(0xff24272E),
+    surfaceTint = Color.White,
+    surfaceVariant = backOfBarNight,
+    tertiaryContainer = Color(0xFFD6F9CC),
+    inverseSurface = Color(0xFFA0A0A0),
+    inversePrimary =  Color(0xFF333333),
+    onTertiary = Color(0xFF294D24).copy(alpha = 0.4f),
+    surfaceContainerHigh = Color(0xDF0E3636),
+    surfaceContainerLow = Color(0xff68BB59),
+    surfaceContainerLowest = Color(0xDF0E3636)
 
-    )
+
+
+)
 
 private val LightColorScheme = lightColorScheme(
     primary = Purple40,
     secondary = PurpleGrey40,
     tertiary = Pink40,
-    background = Color.White , onBackground = Color.Black,
+    background = screenBack , onBackground = Color.Black,
     surface =  Color.LightGray.copy(alpha = 0.4f),
     inverseOnSurface = Color(0xffE5EBF7),
-
+    surfaceTint = Color.White,
+    surfaceVariant = backOfBar,
+    tertiaryContainer = Color(0xFF68BB59),
+    inverseSurface = Color(0xFFBABCBE),
+    inversePrimary =  Color(0xFF333333),
+    onTertiary = Color(0xFF76B947).copy(alpha = 0.2f),
+    surfaceContainerHigh = Color.White,
+    surfaceContainerLow = buttonColor,
+    surfaceContainerLowest = Color.LightGray.copy(alpha = 0.4f)
     /* Other default colors to override
     background = Color(0xFFFFFBFE),
     surface = Color(0xFFFFFBFE),
@@ -57,11 +76,13 @@ fun SmartKisanTheme(
         else -> LightColorScheme
     }
     val view = LocalView.current
+
+
     if (!view.isInEditMode) {
         SideEffect {
             val window = (view.context as Activity).window
-            window.statusBarColor = colorScheme.primary.toArgb()
-            WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = darkTheme
+            window.statusBarColor = colorScheme.background.toArgb()
+            WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = !darkTheme
         }
     }
 

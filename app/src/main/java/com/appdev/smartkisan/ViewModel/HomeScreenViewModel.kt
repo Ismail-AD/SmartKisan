@@ -243,6 +243,7 @@ class HomeScreenViewModel @Inject constructor(
                                 statusMessage = "" // Clear message when we have weather data
                             )
                         }
+                        
                     }
 
                     is ResultState.Failure -> {

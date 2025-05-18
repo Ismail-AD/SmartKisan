@@ -16,7 +16,7 @@ plugins {
 android {
 
     namespace = "com.appdev.smartkisan"
-    compileSdk = 34
+    compileSdk = 35
 
     val localProperties = Properties()
     localProperties.load(File(rootDir, "local.properties").inputStream())
@@ -30,7 +30,7 @@ android {
     defaultConfig {
         applicationId = "com.appdev.smartkisan"
         minSdk = 26
-        targetSdk = 34
+        targetSdk = 35
         versionCode = 1
         versionName = "1.0"
         multiDexEnabled = true
@@ -103,6 +103,11 @@ dependencies {
     implementation("com.google.android.gms:play-services-location:21.3.0")
 
     implementation("com.google.maps.android:maps-compose:4.3.3")
+    implementation("com.google.accompanist:accompanist-systemuicontroller:0.35.0-alpha") // or latest
+    implementation("com.github.GhayasAhmad:auto-background-remover:1.0.3")
+
+    implementation("io.github.rroohit:ImageCropView:3.1.1")
+    implementation("androidx.compose.foundation:foundation-android:1.7.5")
 
     testImplementation("junit:junit:4.13.2")
     androidTestImplementation("androidx.test.ext:junit:1.2.1")
@@ -126,6 +131,10 @@ dependencies {
     kapt("com.google.dagger:hilt-android-compiler:2.55")
     implementation("com.google.dagger:hilt-android:2.55")
     implementation("androidx.hilt:hilt-navigation-compose:1.2.0")
+    implementation("com.google.mlkit:language-id:17.0.6")
+
+
+    implementation("com.github.lincollincol:compose-audiowaveform:v1.1.1")
 
     implementation(platform("io.github.jan-tennert.supabase:bom:3.1.1"))
     implementation("io.github.jan-tennert.supabase:postgrest-kt:3.1.1")
@@ -146,5 +155,5 @@ dependencies {
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
     implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
     implementation("com.google.accompanist:accompanist-permissions:0.34.0")
-
+    implementation("com.github.furkanayaz:Slippy-Bottom-Bar:3.0")
 }

@@ -1,5 +1,6 @@
 package com.appdev.smartkisan.ViewModel
 
+import android.net.Uri
 import android.util.Log
 import android.util.Patterns
 import androidx.compose.runtime.getValue
@@ -49,6 +50,24 @@ class LoginViewModel @Inject constructor(
         }
     }
 
+    fun handleDeepLink(uri: Uri) {
+        val fragment = uri.fragment
+
+        if (fragment != null && fragment.contains("access_token=")) {
+            // Parse the fragment to extract the access_token
+            val tokenMap = fragment.split("&")
+                .map { it.split("=", limit = 2) }
+                .filter { it.size == 2 }
+                .associate { it[0] to it[1] }
+
+            val accessToken = tokenMap["access_token"]
+
+            if (accessToken != null) {
+                onAction(UserAuthAction.SetResetToken(accessToken))
+            }
+        }
+    }
+
     fun getUserEntity() {
         viewModelScope.launch {
             repository.fetchUserInfo().collect { result ->
@@ -78,6 +97,46 @@ class LoginViewModel @Inject constructor(
 
                 password.length < 6 -> {
                     Pair(false, "Password should be at least 6 characters")
+                }
+
+                else -> Pair(true, "Valid")
+            }
+        }
+    }
+
+    private fun validateResetPasswordEmailForm(): Pair<Boolean, String> {
+        with(loginState) {
+            return when {
+                email.trim().isEmpty() -> {
+                    Pair(false, "Please enter email address")
+                }
+
+                !Patterns.EMAIL_ADDRESS.matcher(email).matches() -> {
+                    Pair(false, "Please enter a valid email address")
+                }
+
+                else -> Pair(true, "Valid")
+            }
+        }
+    }
+
+    private fun validateNewPasswordForm(): Pair<Boolean, String> {
+        with(loginState) {
+            return when {
+                newPassword.trim().isEmpty() -> {
+                    Pair(false, "Please enter new password")
+                }
+
+                newPassword.length < 6 -> {
+                    Pair(false, "Password should be at least 6 characters")
+                }
+
+                confirmNewPassword.trim().isEmpty() -> {
+                    Pair(false, "Please confirm your new password")
+                }
+
+                newPassword != confirmNewPassword -> {
+                    Pair(false, "Passwords do not match")
                 }
 
                 else -> Pair(true, "Valid")
@@ -154,10 +213,7 @@ class LoginViewModel @Inject constructor(
             is UserAuthAction.SendMeOtp -> {
                 loginState = loginState.copy(isLoading = true)
                 val validationResult = validateSignUpForm()
-                Log.d("SignUp", "Result: ${validationResult}")
                 if (validationResult.first) {
-                    Log.d("SignUp", "IN IF")
-
                     viewModelScope.launch {
                         signUpWithEmail(action.email, action.password).collect { result ->
                             loginState = when (result) {
@@ -174,7 +230,6 @@ class LoginViewModel @Inject constructor(
                         }
                     }
                 } else {
-                    Log.d("SignUp", "IN ELSE")
                     loginState = loginState.copy(
                         validationError = validationResult.second,
                         isLoading = false
@@ -338,13 +393,115 @@ class LoginViewModel @Inject constructor(
                 }
             }
 
-            UserAuthAction.SignUpScreen -> {
+            is UserAuthAction.ResetPasswordRequest -> {
+                loginState = loginState.copy(isLoading = true)
+                val validationResult = validateResetPasswordEmailForm()
 
+                if (validationResult.first) {
+                    viewModelScope.launch {
+                        repository.requestPasswordReset(action.email).collect { result ->
+                            loginState = when (result) {
+                                is ResultState.Failure -> loginState.copy(
+                                    errorMessage = result.msg.localizedMessage,
+                                    isLoading = false
+                                )
+
+                                ResultState.Loading -> loginState.copy(isLoading = true)
+                                is ResultState.Success -> {
+                                    loginState.copy(
+                                        isLoading = false,
+                                        passwordResetEmailSent = true,
+                                        errorMessage = null
+                                    )
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    loginState = loginState.copy(
+                        validationError = validationResult.second,
+                        isLoading = false
+                    )
+                }
+            }
+
+            is UserAuthAction.NewPasswordChange -> {
+                loginState = loginState.copy(newPassword = action.password)
+            }
+
+            is UserAuthAction.ConfirmNewPasswordChange -> {
+                loginState = loginState.copy(confirmNewPassword = action.password)
+            }
+
+            is UserAuthAction.UpdatePassword -> {
+                loginState = loginState.copy(isLoading = true)
+                val validationResult = validateNewPasswordForm()
+
+                if (validationResult.first) {
+                    viewModelScope.launch {
+                        repository.updateUserPassword(
+                            action.password,
+                            resetToken = loginState.resetToken,
+                            refreshToken = loginState.refreshToken,
+                            expiresIn = loginState.tokenExpiresIn, tokenType = loginState.tokenType, type = loginState.typeOfReset
+                        ).collect { result ->
+                            loginState = when (result) {
+                                is ResultState.Failure -> loginState.copy(
+                                    errorMessage = result.msg.localizedMessage,
+                                    isLoading = false
+                                )
+
+                                ResultState.Loading -> loginState.copy(isLoading = true)
+                                is ResultState.Success -> {
+                                    loginState.copy(
+                                        isLoading = false,
+                                        passwordResetSuccess = true,
+                                        errorMessage = null
+                                    )
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    loginState = loginState.copy(
+                        validationError = validationResult.second,
+                        isLoading = false
+                    )
+                }
+            }
+
+            UserAuthAction.SignUpScreen -> {
+                // No implementation needed
             }
 
             UserAuthAction.ClearValidationError -> {
-                loginState = loginState.copy(validationError = null)
+                loginState = loginState.copy(validationError = null, errorMessage = null)
             }
+
+            UserAuthAction.ShowStoragePermissionDialog -> {
+                loginState = loginState.copy(showStoragePermissionDialog = true)
+            }
+
+            UserAuthAction.DismissStoragePermissionDialog -> {
+                loginState = loginState.copy(showStoragePermissionDialog = false)
+            }
+
+            is UserAuthAction.ModifyToastState -> {
+                loginState = loginState.copy(showToastState = action.newState)
+            }
+
+            is UserAuthAction.SetResetToken -> {
+                loginState = loginState.copy(
+                    resetToken = action.token,
+                    refreshToken = action.refreshToken,
+                    tokenExpiresIn = action.expiresIn,
+                    tokenType = action.resetTokenType,
+                    typeOfReset = action.type,
+                    deepLinkVerified = true
+                )
+            }
+
+            else -> {}
         }
     }
 
@@ -384,7 +541,6 @@ class LoginViewModel @Inject constructor(
             }
         }
     }
-
 
     private fun getCurrentUserId(): String? {
         return supabaseClient.auth.currentUserOrNull()?.id

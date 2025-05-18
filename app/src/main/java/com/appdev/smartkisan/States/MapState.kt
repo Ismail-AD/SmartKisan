@@ -12,5 +12,6 @@ data class MapState(
     val isSellerInfoLoading: Boolean = false,
     val selectedSellerInfo: UserEntity? = null,
     val showSellerDetailsDialog: Boolean = false,
-    val userLocation: Location? = null
+    val userLocation: Location? = null,
+
 )

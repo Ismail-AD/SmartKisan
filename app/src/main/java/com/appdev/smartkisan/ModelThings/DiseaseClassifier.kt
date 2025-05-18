@@ -1,176 +1,242 @@
-package com.appdev.smartkisan.ModelThings
+package com.example.plantdisease.model
 
 import android.content.Context
 import android.graphics.Bitmap
 import android.util.Log
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import org.tensorflow.lite.Interpreter
-import org.tensorflow.lite.support.image.TensorImage
-import org.tensorflow.lite.support.tensorbuffer.TensorBuffer
-import org.tensorflow.lite.support.image.ops.ResizeOp
-import org.tensorflow.lite.support.image.ImageProcessor
-import org.tensorflow.lite.DataType
+import org.tensorflow.lite.support.common.FileUtil
 import org.tensorflow.lite.support.common.ops.NormalizeOp
-import java.nio.MappedByteBuffer
-import java.io.FileInputStream
-import java.io.IOException
-import java.nio.channels.FileChannel
+import org.tensorflow.lite.support.image.ImageProcessor
+import org.tensorflow.lite.support.image.TensorImage
+import org.tensorflow.lite.support.image.ops.ResizeOp
+import org.tensorflow.lite.support.image.ops.ResizeWithCropOrPadOp
+import java.io.File
+import java.io.FileOutputStream
+import java.nio.ByteBuffer
+import java.nio.ByteOrder
+import kotlin.math.roundToInt
 
-fun classifyDisease(context: Context, bitmap: Bitmap): String {
-    return try {
-        val model = Interpreter(loadModelFile(context, "udpatedmodel.tflite"))
+/**
+ * Classifies plant diseases from a bitmap image using TensorFlow Lite model
+ * @param context Application context to access resources
+ * @param bitmap The bitmap image to classify
+ * @param cropType The type of crop for which to detect disease
+ * @return Pair of (disease name, confidence) or null if classification fails
+ */
+fun classifyDisease(context: Context, bitmap: Bitmap, cropType: CropType?): Pair<String, Float>? {
+    val TAG = "PlantDiseaseClassifier"
 
-        val inputShape = model.getInputTensor(0).shape() // Should be [1, 160, 160, 3]
-        val inputDataType = model.getInputTensor(0).dataType()
-        Log.d("AZX", "Shape: ${inputShape.contentToString()}, Type: $inputDataType")
+    try {
+        // Get model file and labels for the specified crop type
+        val (modelFileName, classes) = getModelForCrop(cropType ?: CropType.RICE)
 
-        val tensorImage = TensorImage(DataType.FLOAT32)
+        // Model expects 224x224 RGB images
+        val inputWidth = 224
+        val inputHeight = 224
+        val channels = 3
 
-        val resizedBitmap = Bitmap.createScaledBitmap(bitmap, 160, 160, true)
-        val argbBitmap = resizedBitmap.copy(Bitmap.Config.ARGB_8888, true)
+        // IMPORTANT FIX: Convert HARDWARE bitmap to a mutable, CPU-accessible bitmap
+        // Create a copy that's not hardware accelerated
+        val bitmapCopy = bitmap.copy(Bitmap.Config.ARGB_8888, true)
 
-        tensorImage.load(argbBitmap)
+        // Preprocess bitmap
+        val resized = Bitmap.createScaledBitmap(bitmapCopy, inputWidth, inputHeight, true)
 
-        val imageProcessor = ImageProcessor.Builder()
-            .add(ResizeOp(160, 160, ResizeOp.ResizeMethod.BILINEAR))
-            .add(NormalizeOp(127.5f, 127.5f)) // [-1, 1] normalization
-            .build()
+        // Allocate ByteBuffer for input tensor
+        val inputBuffer = ByteBuffer.allocateDirect(4 * inputWidth * inputHeight * channels)
+        inputBuffer.order(ByteOrder.nativeOrder())
 
-        val processedImage = imageProcessor.process(tensorImage)
+        // Normalize pixel values to [0, 1]
+        for (y in 0 until inputHeight) {
+            for (x in 0 until inputWidth) {
+                val pixel = resized.getPixel(x, y)
 
-        val outputShape = model.getOutputTensor(0).shape()
-        val outputDataType = model.getOutputTensor(0).dataType()
-        val outputBuffer = TensorBuffer.createFixedSize(outputShape, outputDataType)
-
-
-        model.run(processedImage.buffer, outputBuffer.buffer.rewind())
-
-        val confidences = outputBuffer.floatArray
-        val maxIndex = confidences.indices.maxByOrNull { confidences[it] } ?: -1
-
-        val labels = listOf(
-            "Apple___Apple_scab",
-            "Apple___Black_rot",
-            "Apple___Cedar_apple_rust",
-            "Apple___healthy",
-            "Background_without_leaves",
-            "Blueberry___healthy",
-            "Cherry___Powdery_mildew",
-            "Cherry___healthy",
-            "Corn___Cercospora_leaf_spot Gray_leaf_spot",
-            "Corn___Common_rust",
-            "Corn___Northern_Leaf_Blight",
-            "Corn___healthy",
-            "Grape___Black_rot",
-            "Grape___Esca_(Black_Measles)",
-            "Grape___Leaf_blight_(Isariopsis_Leaf_Spot)",
-            "Grape___healthy",
-            "Orange___Haunglongbing_(Citrus_greening)",
-            "Peach___Bacterial_spot",
-            "Peach___healthy",
-            "Pepper,_bell___Bacterial_spot",
-            "Pepper,_bell___healthy",
-            "Potato___Early_blight",
-            "Potato___Late_blight",
-            "Potato___healthy",
-            "Raspberry___healthy",
-            "Soybean___healthy",
-            "Squash___Powdery_mildew",
-            "Strawberry___Leaf_scorch",
-            "Strawberry___healthy",
-            "Tomato___Bacterial_spot",
-            "Tomato___Early_blight",
-            "Tomato___Late_blight",
-            "Tomato___Leaf_Mold",
-            "Tomato___Septoria_leaf_spot",
-            "Tomato___Spider_mites Two-spotted_spider_mite",
-            "Tomato___Target_Spot",
-            "Tomato___Tomato_Yellow_Leaf_Curl_Virus",
-            "Tomato___Tomato_mosaic_virus",
-            "Tomato___healthy"
-        )
-        labels.forEachIndexed { index, label ->
-            Log.d("AZX", "Label: $label, Confidence: ${confidences.getOrNull(index)}")
+                // Extract and normalize RGB values (scale from 0-255 to 0-1)
+                inputBuffer.putFloat(((pixel shr 16 and 0xFF) / 255.0f)) // R
+                inputBuffer.putFloat(((pixel shr 8 and 0xFF) / 255.0f))  // G
+                inputBuffer.putFloat(((pixel and 0xFF) / 255.0f))        // B
+            }
         }
 
-        model.close()
-        if (maxIndex in labels.indices) labels[maxIndex] else "Unknown"
+        // Reset position to start for reading
+        inputBuffer.rewind()
+
+        // Load TFLite model
+        val model = FileUtil.loadMappedFile(context, modelFileName)
+        val interpreter = Interpreter(model)
+
+        // Prepare output buffer
+        val numClasses = classes.size
+        val outputBuffer = Array(1) { FloatArray(numClasses) }
+
+        // Run inference
+        interpreter.run(inputBuffer, outputBuffer)
+
+        // Find top prediction
+        val confidences = outputBuffer[0]
+        var maxIdx = 0
+        var maxConfidence = confidences[0]
+
+        for (i in 1 until numClasses) {
+            if (confidences[i] > maxConfidence) {
+                maxIdx = i
+                maxConfidence = confidences[i]
+            }
+        }
+
+        // Get readable disease name
+        val rawLabel = classes[maxIdx]
+        val readableLabel = formatDiseaseLabel(rawLabel)
+
+        // Clean up resources
+        interpreter.close()
+
+        Log.d(TAG, "Classification result: $readableLabel with confidence: ${maxConfidence * 100}%")
+        return Pair(readableLabel, maxConfidence)
     } catch (e: Exception) {
-        Log.e("AutoMLModel", "Error: ${e.message}")
-        "Error: ${e.message}"
+        Log.e(TAG, "Error classifying disease: ${e.message}")
+        e.printStackTrace()
+        return null
     }
 }
 
+/**
+ * Returns model file and labels for each crop type
+ */
+private fun getModelForCrop(cropType: CropType): Pair<String, List<String>> {
+    return when (cropType) {
+        CropType.ORANGE -> Pair(
+            "new_citrus_disease_model.tflite",
+            listOf(
+                "Citrus canker",
+                "Citrus greening",
+                "Citrus mealybugs",
+                "Powdery mildew",
+                "Spiny whitefly",
+                "Healthy Leaf"
+            )
+        )
 
-//fun classifyDisease(context: Context, bitmap: Bitmap): String {
-//    return try {
-//        val model = Interpreter(loadModelFile(context, "model.tflite"))
-//        logModelInfo(model)
-//        val tensorImage = TensorImage(DataType.UINT8)
-//
-//        val argbBitmap = bitmap.copy(Bitmap.Config.ARGB_8888, true)
-//        tensorImage.load(argbBitmap)
-//
-//        val imageProcessor = ImageProcessor.Builder()
-//            .add(ResizeOp(224, 224, ResizeOp.ResizeMethod.BILINEAR)) // Only resize
-//            .build()
-//
-//        val processedImage = imageProcessor.process(tensorImage)
-//
-//        val outputBuffer = TensorBuffer.createFixedSize(intArrayOf(1, 6), DataType.UINT8)
-//
-//
-//        model.run(processedImage.buffer, outputBuffer.buffer.rewind())
-//
-//
-//        val confidences = outputBuffer.floatArray
-//
-//        confidences.forEachIndexed { index, confidence ->
-//            Log.d("Prediction", "Class $index: ${confidence}")
-//        }
-//
-//
-//        val maxIndex = confidences.indices.maxByOrNull { confidences[it] } ?: -1
-//
-//
-//        val labels = listOf(
-//            "Corn_common_rust",
-//            "Corn_gray_leaf_spot",
-//            "Potato_early_blight",
-//            "Strawberry_leaf_scorch",
-//            "Tomato_leaf_mold",
-//            "Tomato_mosaic_virus"
-//        )
-//
-//
-//
-//        model.close()
-//        if (maxIndex in labels.indices) labels[maxIndex] else "Unknown"
-//    } catch (e: Exception) {
-//        Log.e("AutoMLModel", "Error: ${e.message}")
-//        "Error: ${e.message}"
-//    }
-//}
+        CropType.GRAPES -> Pair(
+            "grapes_disease_model.tflite",
+            listOf(
+                "Grape___Black_rot",
+                "Grape___Esca_(Black_Measles)",
+                "Grape___Leaf_blight_(Isariopsis_Leaf_Spot)",
+                "Grape___healthy"
+            )
+        )
 
-private fun logModelInfo(interpreter: Interpreter) {
-    try {
-        val inputTensor = interpreter.getInputTensor(0)
-        val outputTensor = interpreter.getOutputTensor(0)
+        CropType.APPLE -> Pair(
+            "apple_disease_model.tflite",
+            listOf(
+                "Apple___Apple_scab",
+                "Apple___Black_rot",
+                "Apple___Cedar_apple_rust",
+                "Apple___healthy"
+            )
+        )
 
-        Log.d("ModelInfo", "Input shape: ${inputTensor.shape().joinToString()}")
-        Log.d("ModelInfo", "Input type: ${inputTensor.dataType()}")
-        Log.d("ModelInfo", "Output shape: ${outputTensor.shape().joinToString()}")
-        Log.d("ModelInfo", "Output type: ${outputTensor.dataType()}")
-    } catch (e: Exception) {
-        Log.e("ModelInfo", "Failed to get model info: ${e.message}")
+        CropType.CORN -> Pair(
+            "corp_corn_disease_model.tflite",
+            listOf(
+                "Corn_(maize)___Cercospora_leaf_spot Gray_leaf_spot",
+                "Corn_(maize)___Common_rust_",
+                "Corn_(maize)___Northern_Leaf_Blight",
+                "Corn_(maize)___healthy"
+            )
+        )
+
+        CropType.TOMATO -> Pair(
+            "tomato_disease_model.tflite",
+            listOf(
+                "Tomato___Bacterial_spot",
+                "Tomato___Early_blight",
+                "Tomato___Late_blight",
+                "Tomato___Leaf_Mold",
+                "Tomato___Septoria_leaf_spot",
+                "Tomato___Spider_mites Two-spotted_spider_mite",
+                "Tomato___Target_Spot",
+                "Tomato___Tomato_Yellow_Leaf_Curl_Virus",
+                "Tomato___Tomato_mosaic_virus",
+                "Tomato___healthy"
+            )
+        )
+
+        CropType.POTATO -> Pair(
+            "potato_disease_model.tflite",
+            listOf(
+                "Potato___Early_blight",
+                "Potato___Late_blight",
+                "Potato___healthy"
+            )
+        )
+
+        CropType.RICE -> Pair(
+            "new_rice_disease_model.tflite",
+            listOf(
+                "Bacterial blight",
+                "Brown spot",
+                "Leaf Blast",
+                "Healthy Rice Leaf"
+            )
+        )
     }
 }
 
-@Throws(IOException::class)
-private fun loadModelFile(context: Context, modelFilename: String): MappedByteBuffer {
-    val fileDescriptor = context.assets.openFd(modelFilename)
-    val inputStream = FileInputStream(fileDescriptor.fileDescriptor)
-    val fileChannel = inputStream.channel
-    val startOffset = fileDescriptor.startOffset
-    val declaredLength = fileDescriptor.declaredLength
-    return fileChannel.map(FileChannel.MapMode.READ_ONLY, startOffset, declaredLength)
+/**
+ * Formats the raw model output into readable disease names
+ */
+private fun formatDiseaseLabel(rawLabel: String): String {
+    // Extract disease part by removing the crop prefix
+    val diseasePart = when {
+        rawLabel.startsWith("Grape___") -> rawLabel.replace("Grape___", "")
+        rawLabel.startsWith("Apple___") -> rawLabel.replace("Apple___", "")
+        rawLabel.startsWith("Corn_(maize)___") -> rawLabel.replace("Corn_(maize)___", "")
+        rawLabel.startsWith("Tomato___") -> rawLabel.replace("Tomato___", "")
+        rawLabel.startsWith("Potato___") -> rawLabel.replace("Potato___", "")
+        else -> rawLabel // For Orange and Rice that don't use prefixes
+    }
+
+    // Format specific disease names nicely
+    return when (diseasePart) {
+        "healthy", "Healthy" -> "Healthy"
+        "Black_rot" -> "Black Rot"
+        "Esca_(Black_Measles)" -> "Esca (Black Measles)"
+        "Leaf_blight_(Isariopsis_Leaf_Spot)" -> "Leaf Blight"
+        "Bacterial blight" -> "Bacterial Blight"
+        "Brown spot" -> "Brown Spot"
+        "Leaf Blast" -> "Leaf Blast"
+        else -> diseasePart.replace("_", " ")
+    }
+}
+
+/**
+ * Data class to hold classification results
+ */
+data class ClassificationResult(
+    val diseaseName: String,
+    val confidence: Float,
+    val isUncertain: Boolean = false
+) {
+    val confidencePercent: Int
+        get() = (confidence * 100).roundToInt()
+
+    val isHealthy: Boolean
+        get() = diseaseName.equals("Healthy", ignoreCase = true)
+}
+
+/**
+ * Supported crop types
+ */
+enum class CropType {
+    ORANGE,
+    GRAPES,
+    APPLE,
+    CORN,
+    TOMATO,
+    POTATO,
+    RICE
 }

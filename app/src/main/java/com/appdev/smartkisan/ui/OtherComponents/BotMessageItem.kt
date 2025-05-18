@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -54,6 +55,7 @@ fun BotMessageItem(botMessage: BotChatMessage) {
                         contentScale = ContentScale.Fit
                     )
                 }
+
                 else -> {
                     // Multiple images in a horizontal scrollable row
                     LazyRow(
@@ -81,9 +83,7 @@ fun BotMessageItem(botMessage: BotChatMessage) {
                 modifier = Modifier
                     .widthIn(max = 300.dp)
                     .background(
-                        if (botMessage.role == ChatRoleEnum.USER.value) myGreen else if (isSystemInDarkTheme()) Color(
-                            0xFFAFD7DC
-                        ) else lightBlue,
+                        if (botMessage.role == ChatRoleEnum.USER.value) myGreen else MaterialTheme.colorScheme.surfaceContainerLowest,
                         RoundedCornerShape(
                             topEnd = if (botMessage.role == ChatRoleEnum.USER.value) 0.dp else 10.dp,
                             topStart = if (botMessage.role == ChatRoleEnum.USER.value) 10.dp else 0.dp,
@@ -96,9 +96,7 @@ fun BotMessageItem(botMessage: BotChatMessage) {
                 Text(
                     text = formatMessageWithBoldText(botMessage.message),
                     fontSize = 15.sp,
-                    color = if (botMessage.role == ChatRoleEnum.USER.value) Color.White else Color.Black.copy(
-                        alpha = 0.9f
-                    ),
+                    color = if (botMessage.role == ChatRoleEnum.USER.value) Color.White else MaterialTheme.colorScheme.onBackground,
                     modifier = Modifier.padding(horizontal = 20.dp, vertical = 10.dp)
                 )
             }

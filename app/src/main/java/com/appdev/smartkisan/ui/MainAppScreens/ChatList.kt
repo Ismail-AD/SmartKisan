@@ -247,11 +247,11 @@ fun ClickableTabs(selectedItem: Int, tabsList: List<String>, onClick: (Int) -> U
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .background(Color.White, RoundedCornerShape(10.dp))
+            .background(MaterialTheme.colorScheme.surfaceContainerHigh, RoundedCornerShape(10.dp))
             .border(
                 border = BorderStroke(
-                    1.dp,
-                    myGreen
+                    2.dp,
+                    Color(0xFF2E7D32).copy(alpha = 0.9f)
                 ),
                 shape = RoundedCornerShape(10.dp)
             )
@@ -288,8 +288,8 @@ fun TabItem(isSelected: Boolean, text: String, modifier: Modifier, onClick: () -
 
     val background: Color by animateColorAsState(
         targetValue = when (isSelected) {
-            true -> myGreen
-            false -> Color.White
+            true -> Color(0xFF2E7D32).copy(alpha = 0.9f)
+            false -> MaterialTheme.colorScheme.surfaceContainerHigh
         },
         animationSpec = tween(durationMillis = 300, easing = LinearOutSlowInEasing),
         label = ""
@@ -300,7 +300,7 @@ fun TabItem(isSelected: Boolean, text: String, modifier: Modifier, onClick: () -
         modifier = modifier
             .fillMaxWidth(1f)
             .fillMaxHeight(1f)
-            .background(background, RoundedCornerShape(5.dp))
+            .background(background, RoundedCornerShape(10.dp))
             .clickable(
                 interactionSource = interactionSource,
                 indication = null

@@ -1,8 +1,9 @@
 package com.appdev.smartkisan.data
 
+
 data class DiseaseResult(
     val diseaseName: String,
-    val diseaseImage: String? = "",
-    val reasons: List<String>,
-    val confirmation: List<String>
+    val confidence: Int = 0,
+    val causedBy:List<String> = emptyList(),
+    val treatments: List<String> = emptyList()
 )

@@ -52,7 +52,6 @@ class Repository @Inject constructor(
     }
 
 
-
     // Add this function to fetch a specific user by ID
     fun fetchUserById(userId: String): Flow<ResultState<UserEntity>> = flow {
         emit(ResultState.Loading)
@@ -125,7 +124,10 @@ class Repository @Inject constructor(
                     filter {
                         eq("creatorId", uid)
                     }
-                    order("updateTime", order = Order.DESCENDING) // ensure "created_at" exists in your table
+                    order(
+                        "updateTime",
+                        order = Order.DESCENDING
+                    ) // ensure "created_at" exists in your table
                     limit(3)
                 }.decodeList<Product>()
                 emit(ResultState.Success(listOfProducts))
@@ -203,9 +205,11 @@ class Repository @Inject constructor(
                                 set("plantingSeason", product.plantingSeason)
                                 set("daysToHarvest", product.daysToHarvest)
                             }
+
                             "Fertilizers" -> {
                                 set("applicationMethod", product.applicationMethod)
                             }
+
                             "Medicine" -> {
                                 set("targetPestsOrDiseases", product.targetPestsOrDiseases)
                             }
@@ -349,7 +353,7 @@ class Repository @Inject constructor(
                 .from("users")
                 .update({
                     set("name", username)
-                }){
+                }) {
                     filter {
                         eq("id", userId)
                     }
@@ -388,7 +392,7 @@ class Repository @Inject constructor(
                 .from("sellersData")
                 .update({
                     set("shopName", shopName)
-                }){
+                }) {
                     filter {
                         eq("id", userId)
                     }
@@ -414,7 +418,7 @@ class Repository @Inject constructor(
                 .from("sellersData")
                 .update({
                     set("contact", contact)
-                }){
+                }) {
                     filter {
                         eq("id", userId)
                     }
@@ -428,7 +432,11 @@ class Repository @Inject constructor(
     }
 
     // Update password
-    fun updatePassword(email: String,currentPassword: String, newPassword: String): Flow<ResultState<Unit>> = flow {
+    fun updatePassword(
+        email: String,
+        currentPassword: String,
+        newPassword: String
+    ): Flow<ResultState<Unit>> = flow {
         emit(ResultState.Loading)
         try {
             try {
@@ -451,7 +459,7 @@ class Repository @Inject constructor(
     }
 
     // Update shop location
-    fun updateShopLocation(lat:Double,long:Double): Flow<ResultState<String>> = flow {
+    fun updateShopLocation(lat: Double, long: Double): Flow<ResultState<String>> = flow {
         emit(ResultState.Loading)
         try {
             val userId = getCurrentUserId()
@@ -465,7 +473,7 @@ class Repository @Inject constructor(
                 .update({
                     set("latitude", lat)
                     set("longitude", long)
-                }){
+                }) {
                     filter {
                         eq("id", userId)
                     }
@@ -479,41 +487,42 @@ class Repository @Inject constructor(
     }
 
     // Update profile image
-    fun updateProfileImage(imageUri: Uri, imageByteArray: ByteArray): Flow<ResultState<String>> = flow {
-        emit(ResultState.Loading)
-        try {
-            val userId = getCurrentUserId()
-            if (userId == null) {
-                emit(ResultState.Failure(Exception("User not authenticated")))
-                return@flow
-            }
-
-            // Upload image to storage
-            val imageUrl = imageUploading(
-                imageUri,
-                imageByteArray,
-                profileImageFolderPath,
-                profileImageBucketId
-            )
-
-            Log.d("ID","${userId}")
-            // Update image URL in database
-            supabaseClient
-                .from("users")
-                .update({
-                    set("imageurl", imageUrl)
-                }){
-                    filter {
-                        eq("id", userId)
-                    }
+    fun updateProfileImage(imageUri: Uri, imageByteArray: ByteArray): Flow<ResultState<String>> =
+        flow {
+            emit(ResultState.Loading)
+            try {
+                val userId = getCurrentUserId()
+                if (userId == null) {
+                    emit(ResultState.Failure(Exception("User not authenticated")))
+                    return@flow
                 }
 
-            emit(ResultState.Success(imageUrl))
-        } catch (e: Exception) {
-            Log.e("SellerRepository", "Failed to update profile image: ${e.message}", e)
-            emit(ResultState.Failure(e))
+                // Upload image to storage
+                val imageUrl = imageUploading(
+                    imageUri,
+                    imageByteArray,
+                    profileImageFolderPath,
+                    profileImageBucketId
+                )
+
+                Log.d("ID", "${userId}")
+                // Update image URL in database
+                supabaseClient
+                    .from("users")
+                    .update({
+                        set("imageurl", imageUrl)
+                    }) {
+                        filter {
+                            eq("id", userId)
+                        }
+                    }
+
+                emit(ResultState.Success(imageUrl))
+            } catch (e: Exception) {
+                Log.e("SellerRepository", "Failed to update profile image: ${e.message}", e)
+                emit(ResultState.Failure(e))
+            }
         }
-    }
 
     fun loginUser(myEmail: String, _mpassword: String): Flow<ResultState<UserSession?>> =
         flow {
@@ -559,6 +568,60 @@ class Repository @Inject constructor(
                 emit(ResultState.Failure(e))
             }
         }
+
+    fun requestPasswordReset(email: String): Flow<ResultState<Boolean>> = flow {
+        emit(ResultState.Loading)
+        try {
+            supabaseClient.auth.resetPasswordForEmail(email = email)
+            emit(ResultState.Success(true))
+        } catch (e: Exception) {
+            emit(ResultState.Failure(e))
+        }
+    }
+
+    // Update this function in your repository class
+    fun updateUserPassword(
+        newPassword: String,
+        resetToken: String?,
+        refreshToken: String? = null,
+        expiresIn: Int? = null,
+        tokenType: String,
+        type:String
+    ): Flow<ResultState<Boolean>> = flow {
+        emit(ResultState.Loading)
+        try {
+            if (resetToken != null) {
+                // For password reset flow with recovery token
+
+                if (refreshToken != null && expiresIn != null) {
+                    supabaseClient.auth.importSession(
+                        session = UserSession(
+                            accessToken = resetToken,
+                            refreshToken = refreshToken,
+                            expiresIn = expiresIn.toLong(), tokenType = tokenType, type = type
+                        )
+                    )
+                }
+                Log.d("CHLAZ","${resetToken}\n${refreshToken}")
+
+                // Now that we have a session with the recovery token, update the password
+                supabaseClient.auth.updateUser {
+                    password = newPassword
+                }
+                emit(ResultState.Success(true))
+            } else {
+                // If the user is already logged in and wants to change password
+                supabaseClient.auth.updateUser {
+                    password = newPassword
+                }
+                emit(ResultState.Success(true))
+            }
+        } catch (e: Exception) {
+            // Log the error for debugging
+            Log.e("AuthRepository", "Password update failed", e)
+            emit(ResultState.Failure(e))
+        }
+    }
 
     // Optional: Add a password reset function
     fun sendPasswordResetEmail(email: String): Flow<ResultState<String>> =

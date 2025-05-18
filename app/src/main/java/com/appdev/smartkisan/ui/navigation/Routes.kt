@@ -1,15 +1,19 @@
 package com.appdev.smartkisan.ui.navigation
 
 sealed class Routes(val route: String) {
+    object ResetPassword : Routes("reset_password")
+    object ResetPasswordConfirmation : Routes("reset_confirmation")
     object OnBoarding : Routes("OnBoarding_Screen")
     object RoleSelect : Routes("RoleSelect_Screen")
     object SignUp : Routes("SignUp_Screen")
     object Login : Routes("Login_Screen")
+    object PasswordReset : Routes("PasswordReset_Screen")
     object OtpInput : Routes("OtpInput_Screen")
     object HomeScreen : Routes("Home_Screen")
     object AccountScreen : Routes("Account_Screen")
     object MarketPlace : Routes("MarketPlace_Screen")
     object PlantDisease : Routes("PlantDisease_Screen")
+    object ImageCropper : Routes("cropper_screen")
     object DiagnosisResult : Routes("DiagnosisResult_Screen")
     object NewsList : Routes("News_Screen")
     object ShopsOnMap : Routes("Map_Screen")

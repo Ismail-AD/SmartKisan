@@ -3,6 +3,7 @@ package com.appdev.smartkisan.Hilt
 import android.content.Context
 import android.content.SharedPreferences
 import com.appdev.smartkisan.Utils.SessionManagement
+import com.appdev.smartkisan.Utils.SpeechRecognitionManager
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -31,5 +32,11 @@ object AppModule {
         @Named("user_session_prefs") sharedPreferences: SharedPreferences
     ): SessionManagement {
         return SessionManagement(sharedPreferences)
+    }
+
+    @Provides
+    @Singleton
+    fun provideSpeechRecognitionManager(@ApplicationContext context: Context): SpeechRecognitionManager {
+        return SpeechRecognitionManager(context)
     }
 }

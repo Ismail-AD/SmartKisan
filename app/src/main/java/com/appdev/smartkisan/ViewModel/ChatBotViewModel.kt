@@ -6,6 +6,7 @@ import android.graphics.ImageDecoder
 import android.net.Uri
 import android.os.Build
 import android.provider.MediaStore
+import android.speech.SpeechRecognizer
 import android.util.Log
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -20,11 +21,13 @@ import com.appdev.smartkisan.States.ChatBotUiState
 import com.appdev.smartkisan.data.BotChatMessage
 import com.appdev.smartkisan.data.ChatRoleEnum
 import com.appdev.smartkisan.Utils.ResultState
+import com.appdev.smartkisan.Utils.SpeechRecognitionManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dev.shreyaspatil.ai.client.generativeai.GenerativeModel
 import dev.shreyaspatil.ai.client.generativeai.type.content
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.ByteArrayOutputStream
@@ -32,16 +35,21 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import javax.inject.Inject
+import kotlin.random.Random
 
 @HiltViewModel
 class ChatBotViewModel @Inject constructor(
     val repository: Repository,
     private val botChatRepository: ChatBotRepository,
-    private val appContext: Context // Inject application context
+    private val appContext: Context,
+    private val speechRecognitionManager: SpeechRecognitionManager
 ) : ViewModel() {
 
     var chatBotUiState by mutableStateOf(ChatBotUiState())
         private set
+
+    // Add a separate state for temporary speech recognition text
+    private var tempRecognizedText = ""
 
     private val genAI by lazy {
         GenerativeModel(
@@ -63,7 +71,16 @@ class ChatBotViewModel @Inject constructor(
 
         // Load available dates for the history selector
         loadAvailableDates()
+        // Collect speech amplitude updates
+        viewModelScope.launch {
+            speechRecognitionManager.speechAmplitude.collect { amplitude ->
+                chatBotUiState = chatBotUiState.copy(speechAmplitude = amplitude)
+
+            }
+        }
     }
+
+
 
     fun onAction(action: ChatBotScreenActions) {
         when (action) {
@@ -76,6 +93,10 @@ class ChatBotViewModel @Inject constructor(
                     chatBotUiState.copy(selectedImageUris = chatBotUiState.selectedImageUris + action.uris)
             }
 
+            is ChatBotScreenActions.PermissionDeniedPermanent->{
+                chatBotUiState=chatBotUiState.copy(showAudioPermitRationale = true)
+
+            }
             is ChatBotScreenActions.ClearSelectedImages -> {
                 chatBotUiState = chatBotUiState.copy(selectedImageUris = emptyList())
             }
@@ -84,6 +105,15 @@ class ChatBotViewModel @Inject constructor(
                 chatBotUiState =
                     chatBotUiState.copy(selectedImageUris = chatBotUiState.selectedImageUris.filter { uri -> uri != action.uri })
             }
+
+            is ChatBotScreenActions.ToggleDateSelector -> {
+                chatBotUiState = chatBotUiState.copy(isDateSelectorVisible = !chatBotUiState.isDateSelectorVisible)
+            }
+
+            is ChatBotScreenActions.HideDateSelector -> {
+                chatBotUiState = chatBotUiState.copy(isDateSelectorVisible = false)
+            }
+
 
             is ChatBotScreenActions.OpenImagePicker -> {
                 // This is handled by the UI with the photo picker launcher
@@ -98,9 +128,17 @@ class ChatBotViewModel @Inject constructor(
                     }
                 }
             }
+            is ChatBotScreenActions.ShowDatePickerDialog -> {
+                chatBotUiState = chatBotUiState.copy(isDatePickerDialogVisible = true)
+            }
+
+            is ChatBotScreenActions.HideDatePickerDialog -> {
+                chatBotUiState = chatBotUiState.copy(isDatePickerDialogVisible = false)
+            }
 
             is ChatBotScreenActions.LoadMessagesByDate -> {
                 loadMessagesByDate(action.date)
+
             }
 
             is ChatBotScreenActions.LoadMoreMessages -> {
@@ -114,9 +152,239 @@ class ChatBotViewModel @Inject constructor(
 
             is ChatBotScreenActions.ReturnToToday -> {
                 loadTodayMessages()
+                chatBotUiState = chatBotUiState.copy(isDatePickerDialogVisible = false)
+            }
+
+
+            is ChatBotScreenActions.StartSpeechRecognition -> {
+                // Reset temporary recognized text but preserve existing input
+                tempRecognizedText = chatBotUiState.userMessage
+
+                chatBotUiState = chatBotUiState.copy(
+                    isListening = true,
+                    isSpeechRecognitionActive = true,
+                    showRecordingDialog = true
+                )
+
+                startSpeechRecognition()
+            }
+
+            is ChatBotScreenActions.StopSpeechRecognition -> {
+                Log.d("ChatBotViewModel", "Stopping speech recognition, temp text: $tempRecognizedText")
+
+                // Save current temp text before stopping
+                val currentText = tempRecognizedText
+
+                // Stop recognition
+                stopSpeechRecognition()
+
+                // Apply the recognized text to the userMessage field and close the dialog
+                // Only update if we have valid text
+                if (currentText.isNotEmpty()) {
+                    chatBotUiState = chatBotUiState.copy(
+                        userMessage = currentText,
+                        showRecordingDialog = false,
+                        isListening = false,
+                        isSpeechRecognitionActive = false
+                    )
+                } else {
+                    chatBotUiState = chatBotUiState.copy(
+                        showRecordingDialog = false,
+                        isListening = false,
+                        isSpeechRecognitionActive = false
+                    )
+                }
+            }
+
+            is ChatBotScreenActions.CloseRecordingDialog -> {
+                Log.d("ChatBotViewModel", "Closing recording dialog")
+
+                // Save current temp text before stopping
+                val currentText = tempRecognizedText
+
+                // Stop recognition
+                stopSpeechRecognition()
+
+                // If we have accumulated text, use it
+                if (currentText.isNotEmpty()) {
+                    chatBotUiState = chatBotUiState.copy(
+                        userMessage = currentText,
+                        showRecordingDialog = false,
+                        isListening = false,
+                        isSpeechRecognitionActive = false
+                    )
+                } else {
+                    chatBotUiState = chatBotUiState.copy(
+                        showRecordingDialog = false,
+                        isListening = false,
+                        isSpeechRecognitionActive = false
+                    )
+                }
+            }
+
+            is ChatBotScreenActions.SpeechRecognitionResult -> {
+                // Store the recognized text
+                Log.d("ChatBotViewModel", "Speech recognition result: ${action.text}")
+
+                // Only update if we actually got text
+                if (action.text.isNotEmpty()) {
+                    tempRecognizedText = action.text
+
+                    // Update state and ensure text is applied to input field
+                    chatBotUiState = chatBotUiState.copy(
+                        recognizedLanguage = action.language,
+                        isListening = false,
+                        isSpeechRecognitionActive = false,
+                        userMessage = action.text, // Directly apply text to the input field
+                        showRecordingDialog = false // Auto-close the dialog
+                    )
+                } else if (tempRecognizedText.isNotEmpty()) {
+                    // If result is empty but we have accumulated text, use that
+                    chatBotUiState = chatBotUiState.copy(
+                        recognizedLanguage = action.language,
+                        isListening = false,
+                        isSpeechRecognitionActive = false,
+                        userMessage = tempRecognizedText, // Use accumulated text
+                        showRecordingDialog = false // Auto-close the dialog
+                    )
+                } else {
+                    // Just close the dialog if no text at all
+                    chatBotUiState = chatBotUiState.copy(
+                        isListening = false,
+                        isSpeechRecognitionActive = false,
+                        showRecordingDialog = false
+                    )
+                }
+            }
+
+            is ChatBotScreenActions.FinishSpeechRecognition -> {
+                val currentText = tempRecognizedText
+                stopSpeechRecognition()
+
+                // Apply the recognized text to the userMessage field
+                if (currentText.isNotEmpty()) {
+                    chatBotUiState = chatBotUiState.copy(
+                        userMessage = currentText,
+                        showRecordingDialog = false,
+                        isListening = false,
+                        isSpeechRecognitionActive = false
+                    )
+                } else {
+                    chatBotUiState = chatBotUiState.copy(
+                        showRecordingDialog = false,
+                        isListening = false,
+                        isSpeechRecognitionActive = false
+                    )
+                }
+            }
+
+
+            ChatBotScreenActions.DismissMicrophoneDialog->{
+                chatBotUiState = chatBotUiState.copy(showAudioPermitRationale = false)
             }
 
             else -> {}
+        }
+    }
+
+
+    private fun startSpeechRecognition() {
+        if (chatBotUiState.isSpeechRecognitionActive) {
+            Log.d("ChatBotViewModel", "Speech recognition already active, stopping first")
+            stopSpeechRecognition()
+        }
+
+        // Store current text (if any) as initial text
+        val initialText = chatBotUiState.userMessage.trim()
+
+        // Reset temp recognized text but preserve existing input
+        tempRecognizedText = initialText
+
+        chatBotUiState = chatBotUiState.copy(
+            isListening = true,
+            isSpeechRecognitionActive = true,
+            showRecordingDialog = true,
+        )
+
+        Log.d("ChatBotViewModel", "Starting speech recognition with initial text: $initialText")
+
+        speechRecognitionManager.startListening(
+            initialText = initialText, // Pass existing text to preserve it
+            onResult = { text, language ->
+                viewModelScope.launch {
+                    Log.d("ChatBotViewModel", "Final speech result received: $text")
+                    // Only update if we actually got text back
+                    if (text.isNotEmpty()) {
+                        tempRecognizedText = text
+                        // This will close the dialog and set the text
+                        onAction(ChatBotScreenActions.SpeechRecognitionResult(text, language))
+                    } else if (tempRecognizedText.isNotEmpty()) {
+                        // If we have accumulated partial results, use those
+                        onAction(ChatBotScreenActions.SpeechRecognitionResult(tempRecognizedText, language))
+                    } else {
+                        // Just close the dialog, keep existing text
+                        chatBotUiState = chatBotUiState.copy(
+                            showRecordingDialog = false,
+                            isListening = false,
+                            isSpeechRecognitionActive = false
+                        )
+                    }
+                }
+            },
+            onError = { errorCode ->
+                viewModelScope.launch {
+                    Log.d("ChatBotViewModel", "Speech recognition error: $errorCode")
+
+                    // Even with error, we might have accumulated partial results
+                    if (tempRecognizedText.isNotEmpty()) {
+                        chatBotUiState = chatBotUiState.copy(
+                            isListening = false,
+                            isSpeechRecognitionActive = false,
+                            userMessage = tempRecognizedText,
+                            showRecordingDialog = false
+                        )
+                    } else {
+                        chatBotUiState = chatBotUiState.copy(
+                            isListening = false,
+                            isSpeechRecognitionActive = false,
+                            showRecordingDialog = false
+                        )
+                    }
+                }
+            },
+            onPartialResult = { partialText ->
+                viewModelScope.launch {
+                    // Update the temporary variable with partial results
+                    Log.d("ChatBotViewModel", "Partial speech result: $partialText")
+                    if (partialText.isNotEmpty()) {
+                        tempRecognizedText = partialText
+                    }
+                }
+            }
+        )
+    }
+
+    private fun stopSpeechRecognition() {
+        Log.d("ChatBotViewModel", "ViewModel stopping speech recognition")
+
+        // Pass current temp text before stopping
+        val currentTempText = tempRecognizedText
+
+        // Stop speech recognition
+        speechRecognitionManager.stopListening()
+
+        // Update UI state to show we're no longer listening
+        chatBotUiState = chatBotUiState.copy(
+            isListening = false,
+            isSpeechRecognitionActive = false
+        )
+
+        // If we have recognized text when manually stopping, use it
+        if (currentTempText.isNotEmpty()) {
+            chatBotUiState = chatBotUiState.copy(
+                userMessage = currentTempText,
+                showRecordingDialog = false
+            )
         }
     }
 
@@ -225,8 +493,13 @@ class ChatBotViewModel @Inject constructor(
             botChatRepository.getAvailableChatDates().collectLatest { result ->
                 when (result) {
                     is ResultState.Success -> {
+                        val formattedDates = result.data.associateWith { dateStr ->
+                            formatDisplayDate(dateStr)
+                        }
+
                         chatBotUiState = chatBotUiState.copy(
-                            availableDates = result.data
+                            availableDates = result.data,
+                            formattedAvailableDates = formattedDates
                         )
                     }
                     is ResultState.Failure -> {
@@ -366,6 +639,17 @@ class ChatBotViewModel @Inject constructor(
             }
         }
     }
+    fun formatDisplayDate(dateStr: String): String {
+        try {
+            val inputFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+            val outputFormat = SimpleDateFormat("MMM d, yyyy", Locale.getDefault()) // May 16, 2025
+            val date = inputFormat.parse(dateStr)
+            return outputFormat.format(date!!)
+        } catch (e: Exception) {
+            return dateStr // Return original if parsing fails
+        }
+    }
+
 
     private fun uriToBitmap(uri: Uri): Bitmap {
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
@@ -378,5 +662,9 @@ class ChatBotViewModel @Inject constructor(
             @Suppress("DEPRECATION")
             MediaStore.Images.Media.getBitmap(appContext.contentResolver, uri)
         }
+    }
+    override fun onCleared() {
+        super.onCleared()
+        speechRecognitionManager.destroy()
     }
 }

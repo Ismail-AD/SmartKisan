@@ -1,59 +1,19 @@
 package com.appdev.smartkisan.ui.MainAppScreens
 
 import android.net.Uri
-import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.spring
-import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.border
-import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Build
-import androidx.compose.material.icons.rounded.Home
-import androidx.compose.material.icons.rounded.Person
-import androidx.compose.material.icons.rounded.ShoppingCart
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.LocalContentColor
-import androidx.compose.material3.LocalTextStyle
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.BlurredEdgeTreatment
-import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.draw.blur
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.scale
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -61,16 +21,22 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-import com.appdev.smartkisan.Actions.ChatActions
+import com.appdev.smartkisan.R
 import com.appdev.smartkisan.Utils.DateTimeUtils
-import com.appdev.smartkisan.ViewModel.NewsViewModel
-import com.appdev.smartkisan.ViewModel.UserChatViewModel
+import com.appdev.smartkisan.ViewModel.DiseaseDetectViewModel
 import com.appdev.smartkisan.data.New
 import com.appdev.smartkisan.data.Product
 import com.appdev.smartkisan.ui.SharedScreens.ChatMessagesRoot
 import com.appdev.smartkisan.ui.navigation.Routes
+import com.fa.lib.SlippyBar
+import com.fa.lib.SlippyBarStyle
+import com.fa.lib.SlippyBottomBar
+import com.fa.lib.SlippyDividerStyle
+import com.fa.lib.SlippyIconStyle
+import com.fa.lib.SlippyTab
+import com.fa.lib.SlippyTextStyle
+import com.fa.lib.SlippyTheme
 import dev.chrisbanes.haze.HazeState
-import dev.chrisbanes.haze.hazeChild
 import kotlinx.serialization.json.Json
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -78,65 +44,84 @@ import kotlinx.serialization.json.Json
 fun BaseScreen(onLogout: () -> Unit = {}) {
     val controller = rememberNavController()
     val hazeState = remember { HazeState() }
+    val context = androidx.compose.ui.platform.LocalContext.current
 
     val currentRoute = controller.currentBackStackEntryAsState().value?.destination?.route
     val hideBottomBarRoutes = listOf(
         Routes.ProductDetailScreen.route + "/{productJson}", Routes.DiagnosisResult.route,
         Routes.ChatBotScreen.route,
         Routes.NewsList.route,
+        Routes.ImageCropper.route,
         Routes.ShopsOnMap.route,
-        Routes.NewsDetails.route+"/{newsJson}",
+        Routes.NewsDetails.route + "/{newsJson}",
         Routes.UserChatListScreen.route,
         Routes.ChatInDetailScreen.route + "/{receiverId}/{name}/{profilePic}"
     )
 
-    val selectedTabIndex = when (currentRoute) {
-        Routes.HomeScreen.route -> 0
-        Routes.PlantDisease.route -> 1
-        Routes.MarketPlace.route -> 2
-        Routes.AccountScreen.route -> 3
-        else -> -1  // Default value for routes not in the bottom bar
-    }
 
     Scaffold(bottomBar = {
         if (currentRoute !in hideBottomBarRoutes) {
-            GlassmorphicBottomNavigation(
-                hazeState = hazeState,
-                navController = controller,
-                selectedTabIndex = if (selectedTabIndex >= 0) selectedTabIndex else 0,
-                tabs = listOf(
-                    BottomBarTab(
-                        title = "Home",
-                        icon = Icons.Rounded.Home,
-                        color = if (isSystemInDarkTheme()) Color(0xFFFA6FFF) else Color(0xFFE64A19) // Stronger pink
+            val tabs: List<SlippyTab> = listOf(
+                SlippyTab(name = R.string.home, icon = R.drawable.home_icon, action = {
+                    controller.navigate(Routes.HomeScreen.route) {
+                        popUpTo(controller.graph.findStartDestination().id) {
+                            saveState = true
+                        }
+                        launchSingleTop = true
+                        restoreState = true
+                    }
+                }),
+                SlippyTab(name = R.string.diagnosis, icon = R.drawable.diagnosisicon, action = {
+                    controller.navigate(Routes.PlantDisease.route) {
+                        popUpTo(controller.graph.findStartDestination().id) {
+                            saveState = true
+                        }
+                        launchSingleTop = true
+                        restoreState = true
+                    }
+                }),
+                SlippyTab(name = R.string.market, icon = R.drawable.shop, action = {
+                    controller.navigate(Routes.MarketPlace.route) {
+                        popUpTo(controller.graph.findStartDestination().id) {
+                            saveState = true
+                        }
+                        launchSingleTop = true
+                        restoreState = true
+                    }
+                }),
+                SlippyTab(name = R.string.account, icon = R.drawable.account_icon, action = {
+                    controller.navigate(Routes.AccountScreen.route) {
+                        popUpTo(controller.graph.findStartDestination().id) {
+                            saveState = true
+                        }
+                        launchSingleTop = true
+                        restoreState = true
+                    }
+                })
+            )
+
+            SlippyBottomBar(
+                theme = SlippyTheme.CLASSIC,
+                bar = SlippyBar(
+                    barStyle = SlippyBarStyle(backgroundColor = MaterialTheme.colorScheme.surfaceVariant),
+                    textStyle = SlippyTextStyle(
+                        enabledTextColor = MaterialTheme.colorScheme.onBackground,
+                        disabledTextColor = MaterialTheme.colorScheme.inverseSurface
                     ),
-                    BottomBarTab(
-                        title = "Diagnosis",
-                        icon = Icons.Rounded.Build,
-                        color = if (isSystemInDarkTheme()) Color(0xFFADFF64) else Color(0xFF2196F3) // Brighter blue
-                    ), BottomBarTab(
-                        title = "Market",
-                        icon = Icons.Rounded.ShoppingCart,
-                        color = if (isSystemInDarkTheme()) Color(0xFFFFA574) else Color(0xFFE91E63)  // More vibrant orange
-                    ), BottomBarTab(
-                        title = "Account",
-                        icon = Icons.Rounded.Person,
-                        color = if (isSystemInDarkTheme()) Color(0xFFADFF64) else Color(0xFF4CAF50) // Deeper green
-                    )
-                )
-            ) { selectedTab ->
-                when (selectedTab.title) {
-                    "Home" -> controller.navigate(Routes.HomeScreen.route)
-                    "Diagnosis" -> controller.navigate(Routes.PlantDisease.route)
-                    "Market" -> controller.navigate(Routes.MarketPlace.route)
-                    "Account" -> controller.navigate(Routes.AccountScreen.route)
-                }
-            }
+                    iconStyle = SlippyIconStyle(
+                        disabledIconColor = MaterialTheme.colorScheme.inverseSurface,
+                        enabledIconColor = MaterialTheme.colorScheme.tertiaryContainer,
+                    ),
+                    startIndex = 0
+                ),
+                tabs = tabs
+            )
         }
     }) { innerPadding ->
         NavHost(
-            navController = controller, startDestination = Routes.HomeScreen.route,
-            Modifier.padding(innerPadding)
+            navController = controller,
+            startDestination = Routes.HomeScreen.route,
+            modifier = Modifier.padding(innerPadding)
         ) {
             composable(Routes.HomeScreen.route) { HomeRoot(controller) }
             composable(Routes.ChatBotScreen.route) {
@@ -145,13 +130,12 @@ fun BaseScreen(onLogout: () -> Unit = {}) {
                 )
             }
             composable(Routes.AccountScreen.route) {
-                UserAccountRoot (controller){
+                UserAccountRoot(controller) {
                     onLogout()
                 }
             }
             composable(Routes.MarketPlace.route) { MarketPlaceRoot(controller) }
             composable(Routes.ShopsOnMap.route) { MapRootScreen(controller) }
-            composable(Routes.PlantDisease.route) { PlantDiseaseRoot(controller) }
             composable(Routes.UserChatListScreen.route) { ChatListRoot(controller) }
             composable(
                 route = Routes.ChatInDetailScreen.route + "/{receiverId}/{name}/{profilePic}",
@@ -177,8 +161,26 @@ fun BaseScreen(onLogout: () -> Unit = {}) {
                     controller = controller,
                 )
             }
+            composable(Routes.PlantDisease.route) {
+                val viewModel: DiseaseDetectViewModel = hiltViewModel()
+                PlantDiseaseRoot(controller, viewModel)
+            }
 
-            composable(Routes.DiagnosisResult.route) { DiagnosisResult(controller) }
+            composable(Routes.ImageCropper.route) {
+                val parentEntry = remember(controller) {
+                    controller.getBackStackEntry(Routes.PlantDisease.route)
+                }
+                val viewModel: DiseaseDetectViewModel = hiltViewModel(parentEntry)
+                ImageCropperRoot(controller, viewModel)
+            }
+
+            composable(Routes.DiagnosisResult.route) {
+                val parentEntry = remember(controller) {
+                    controller.getBackStackEntry(Routes.PlantDisease.route)
+                }
+                val viewModel: DiseaseDetectViewModel = hiltViewModel(parentEntry)
+                DiagnosisResultRoot(controller, viewModel)
+            }
             composable(Routes.NewsList.route) {
                 AgricultureNewsRoot(controller)
             }
@@ -231,135 +233,18 @@ fun BaseScreen(onLogout: () -> Unit = {}) {
     }
 }
 
-@Composable
-fun GlassmorphicBottomNavigation(
-    hazeState: HazeState,
-    navController: NavHostController,
-    tabs: List<CommonBottomBarTab>,
-    selectedTabIndex: Int,
-    onTabSelected: (CommonBottomBarTab) -> Unit
-) {
-    val isDarkTheme = isSystemInDarkTheme()
-    val dayColors = if (isDarkTheme)
-        listOf(
-            Color.White.copy(alpha = .8f),
-            Color.White.copy(alpha = .35f),
-        )
-    else listOf(
-        Color(0xFF8F8F8F).copy(alpha = 0.35f),
-        Color(0xFF8F8F8F).copy(alpha = 0.2f)
-    )
+// Remove the MaterialBottomNavigation function as it's no longer needed
+// Remove the NavigationItem data class as it's no longer needed
 
-    Box(
-        modifier = Modifier
-            .padding(vertical = 24.dp, horizontal = 20.dp)
-            .fillMaxWidth()
-            .height(64.dp)
-            .hazeChild(state = hazeState, shape = CircleShape)
-            .border(
-                width = if (isDarkTheme) Dp.Hairline else (1.5).dp,
-                brush = Brush.verticalGradient(colors = dayColors),
-                shape = CircleShape
-            )
-    ) {
-        BottomBarTabs(
-            isDarkTheme = isDarkTheme,
-            tabs = tabs,
-            selectedTab = selectedTabIndex
-        ) {
-            onTabSelected(it)
-        }
-
-
-        val animatedSelectedTabIndex by animateFloatAsState(
-            targetValue = selectedTabIndex.toFloat(),
-            animationSpec = spring(
-                stiffness = Spring.StiffnessLow,
-                dampingRatio = Spring.DampingRatioLowBouncy
-            )
-        )
-
-        val animatedColor by animateColorAsState(
-            targetValue = tabs[selectedTabIndex].color,
-            animationSpec = spring(stiffness = Spring.StiffnessLow)
-        )
-
-        Canvas(
-            modifier = Modifier
-                .fillMaxSize()
-                .clip(CircleShape)
-                .blur(50.dp, edgeTreatment = BlurredEdgeTreatment.Unbounded)
-        ) {
-            val tabWidth = size.width / tabs.size
-            drawCircle(
-                color = animatedColor.copy(alpha = .6f),
-                radius = size.height / 2,
-                center = Offset(
-                    (tabWidth * animatedSelectedTabIndex) + tabWidth / 2,
-                    size.height / 2
-                )
-            )
-        }
-    }
-}
-
-@Composable
-fun BottomBarTabs(
-    isDarkTheme: Boolean,
-    tabs: List<CommonBottomBarTab>,
-    selectedTab: Int,
-    onTabSelected: (CommonBottomBarTab) -> Unit,
-) {
-    CompositionLocalProvider(
-        LocalTextStyle provides LocalTextStyle.current.copy(
-            fontSize = 12.sp,
-            fontWeight = FontWeight.Medium,
-        ),
-        LocalContentColor provides if (isDarkTheme) Color.White else Color.Black.copy(alpha = 0.8f)
-    ) {
-        Row(modifier = Modifier.fillMaxSize()) {
-            for (tab in tabs) {
-                val alpha by animateFloatAsState(
-                    targetValue = if (selectedTab == tabs.indexOf(tab)) 1f else .4f, label = ""
-                )
-                val scale by animateFloatAsState(
-                    targetValue = if (selectedTab == tabs.indexOf(tab)) 1f else .98f,
-                    visibilityThreshold = .000001f,
-                    animationSpec = spring(
-                        stiffness = Spring.StiffnessLow,
-                        dampingRatio = Spring.DampingRatioMediumBouncy
-                    ), label = ""
-                )
-                Column(
-                    modifier = Modifier
-                        .scale(scale)
-                        .alpha(alpha)
-                        .fillMaxHeight()
-                        .weight(1f)
-                        .pointerInput(Unit) {
-                            detectTapGestures { onTabSelected(tab) }
-                        },
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center
-                ) {
-                    Icon(imageVector = tab.icon, contentDescription = "tab ${tab.title}")
-                    Text(text = tab.title)
-                }
-            }
-        }
-    }
-}
-
-
+// Keep these classes as they might be used elsewhere in the code
 interface CommonBottomBarTab {
     val title: String
-    val icon: ImageVector
-    val color: Color
+    val icon: androidx.compose.ui.graphics.vector.ImageVector
+    val color: androidx.compose.ui.graphics.Color
 }
 
 data class BottomBarTab(
     override val title: String,
-    override val icon: ImageVector,
-    override val color: Color
+    override val icon: androidx.compose.ui.graphics.vector.ImageVector,
+    override val color: androidx.compose.ui.graphics.Color
 ) : CommonBottomBarTab
-

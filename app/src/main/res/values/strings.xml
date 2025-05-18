@@ -1,9 +1,13 @@
 <resources>
     <string name="app_name">SmartKisan</string>
-    <string name="intro_title_1">Agricultural Marketplace</string>
-    <string name="intro_title_2">Plant Disease Detection</string>
-    <string name="intro_title_3">Personal Farming Assistant</string>
-    <string name="intro_desc_1">Find farming supplies from sellers in your area. Browse products, and locate nearby stores on an interactive map. Get the best deals for your farming needs by connecting directly with sellers through chat or call.</string>
-    <string name="intro_desc_2">Easily identify plant diseases by capturing images using your device\'s camera or uploading from your gallery and get detailed treatment recommendations.</string>
-    <string name="intro_desc_3">Receive personalized recommendations for your crops based on location, soil type, temperature, and rainfall, helping you optimize yield, minimize risks, and keep your crops healthy.</string>
+    <string name="intro_title_1">Agricultural News</string>
+    <string name="intro_title_2">Identify Plant Diseases</string>
+    <string name="intro_title_3">Instant Answers with ChatBot</string>
+    <string name="intro_desc_1">Get the latest agriculture news delivered right to your phone every day. Know what\'s happening in the farming world so you can make smart decisions.</string>
+    <string name="intro_desc_2">Worried about a sick plant? Just take a picture with your phone or upload one you already have. Our app will identify the disease, explain the cause, and suggest the right treatment.</string>
+    <string name="intro_desc_3">Have a question about farming? Our friendly chatbot is ready to help! Ask anything about agriculture and get instant, helpful answers.</string>
+    <string name="home">Home</string>
+    <string name="diagnosis">Diagnosis</string>
+    <string name="market">Marketplace</string>
+    <string name="account">Account</string>
 </resources>

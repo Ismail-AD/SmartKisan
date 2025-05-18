@@ -16,4 +16,5 @@ sealed interface MapActions {
     data class UpdateUserLocation(val location: Location) : MapActions
     object ShowSellerDetailsDialog : MapActions
     object DismissSellerDetailsDialog : MapActions
+
 }

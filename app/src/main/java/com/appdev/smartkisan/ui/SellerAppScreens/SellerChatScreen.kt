@@ -1,5 +1,7 @@
 package com.appdev.smartkisan.ui.SellerAppScreens
 
+import android.net.Uri
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -14,6 +16,9 @@ import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
@@ -68,7 +73,8 @@ fun SellerChatScreenRoot(
     SellerChatScreen (state) { action ->
         when (action) {
             is ChatListActions.MessageAUser -> {
-                controller.navigate(Routes.ChatInDetailScreen.route + "/${action.receiverId}/${action.name}/${action.profilePic}")
+                val encodedProfilePic = Uri.encode(action.profilePic)
+                controller.navigate(Routes.ChatInDetailScreen.route + "/${action.receiverId}/${action.name}/${encodedProfilePic}")
             }
 
             else -> recentChatsViewModel.onAction(action)
@@ -153,6 +159,7 @@ fun SellerChatScreen(
                                 ListRowData(
                                     chatMateData = eachContact
                                 ) {
+                                    Log.d("CAZ","${eachContact}")
                                     onAction(ChatListActions.MessageAUser(
                                         receiverId = eachContact.partnerId ?: "",
                                         name = eachContact.receiverName ?:"",
@@ -168,79 +175,84 @@ fun SellerChatScreen(
     }
 }
 
-
-
 @Composable
 fun ListRowData(chatMateData: ChatMateData, onClick: () -> Unit) {
-    Row(verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(4.dp),
+    Card(
+        onClick = onClick,
         modifier = Modifier
-            .wrapContentHeight()
             .fillMaxWidth()
-            .clickable {
-                onClick()
-            }) {
-        AsyncImage(
-            model = ImageRequest.Builder(LocalContext.current)
-                .data(chatMateData.receiverImage).build(),
-            error = painterResource(R.drawable.farmer),
-            placeholder = painterResource(R.drawable.farmer),
-            contentDescription = "pImage",
-            contentScale = ContentScale.Crop,
+            .padding(vertical = 4.dp),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.Transparent)
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
             modifier = Modifier
-                .size(75.dp)
-                .padding(10.dp)
-                .clip(CircleShape)
-        )
-
-        Column(
-            verticalArrangement = Arrangement.spacedBy(2.dp),
-            modifier = Modifier.fillMaxWidth(0.7f)
+                .wrapContentHeight()
+                .fillMaxWidth()
+                .padding(top = 8.dp, bottom = 8.dp, end = 10.dp)
         ) {
-            Text(
-                text = chatMateData.receiverName ?:"",
-                fontSize = 17.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.onBackground
+            AsyncImage(
+                model = ImageRequest.Builder(LocalContext.current)
+                    .data(chatMateData.receiverImage).build(),
+                error = painterResource(R.drawable.farmer),
+                placeholder = painterResource(R.drawable.farmer),
+                contentDescription = "pImage",
+                contentScale = ContentScale.Crop,
+                modifier = Modifier
+                    .size(75.dp)
+                    .padding(10.dp)
+                    .clip(CircleShape)
             )
 
-            Text(
-                text = chatMateData.lastMessage ?: "",
-                fontSize = 14.sp,
-                color = MaterialTheme.colorScheme.onBackground,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-        }
+            Column(
+                verticalArrangement = Arrangement.spacedBy(2.dp),
+                modifier = Modifier.fillMaxWidth(0.7f)
+            ) {
+                Text(
+                    text = chatMateData.receiverName ?: "",
+                    fontSize = 17.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onBackground
+                )
 
-        Column(
-            horizontalAlignment = Alignment.End,
-            modifier = Modifier.weight(1f)
-        ) {
-            Text(
-                text = toConvertTime(chatMateData.lastMessageTime ?: 0L),
-                fontSize = 13.sp,
-                color = MaterialTheme.colorScheme.onBackground
-            )
+                Text(
+                    text = chatMateData.lastMessage ?: "",
+                    fontSize = 14.sp,
+                    color = MaterialTheme.colorScheme.onBackground,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
 
-            // Show unread count if any
-            if ((chatMateData.unreadCount ?: 0) > 0) {
-                Box(
-                    contentAlignment = Alignment.Center,
-                    modifier = Modifier
-                        .padding(top = 4.dp)
-                        .size(20.dp)
-                        .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.primary)
-                ) {
-                    Text(
-                        text = chatMateData.unreadCount.toString(),
-                        color = Color.White,
-                        fontSize = 12.sp
-                    )
+            Column(
+                horizontalAlignment = Alignment.End,
+                modifier = Modifier.weight(1f)
+            ) {
+                Text(
+                    text = toConvertTime(chatMateData.lastMessageTime ?: 0L),
+                    fontSize = 13.sp,
+                    color = MaterialTheme.colorScheme.onBackground
+                )
+
+                // Show unread count if any
+                if ((chatMateData.unreadCount ?: 0) > 0) {
+                    Box(
+                        contentAlignment = Alignment.Center,
+                        modifier = Modifier
+                            .size(25.dp)
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.primary),
+                    ) {
+                        Text(
+                            text = chatMateData.unreadCount.toString(),
+                            color = Color.White,
+                            fontSize = 12.sp
+                        )
+                    }
                 }
             }
         }
     }
 }
-

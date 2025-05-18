@@ -13,8 +13,11 @@ interface NewsApiService {
     suspend fun getNews(
         @Query("text") text: String = "agriculture",
         @Query("language") language: String = "en",
-        @Query("earliest-publish-date") earliestPublishDate: String = "2025-05-05",
+        @Query("earliest-publish-date") earliestPublishDate: String,
+        @Query("latest-publish-date") latestPublishDate: String,
         @Query("source-country") sourceCountry: String = "pk",
+        @Query("offset") offset: Int = 0, // Added offset parameter for pagination
+        @Query("number") number: Int = 10, // Default page size
         @Query("api-key") apiKey: String = BuildConfig.NEWS_KEY
     ): Response<NewsResponse>
 }

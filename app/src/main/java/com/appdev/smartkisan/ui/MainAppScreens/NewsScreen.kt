@@ -5,9 +5,11 @@ import android.util.Log
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.animateScrollBy
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
@@ -18,15 +20,16 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -40,8 +43,11 @@ import com.appdev.smartkisan.R
 import com.appdev.smartkisan.States.NewsState
 import com.appdev.smartkisan.ViewModel.NewsViewModel
 import com.appdev.smartkisan.data.New
+import com.appdev.smartkisan.ui.OtherComponents.CustomButton
+import com.appdev.smartkisan.ui.OtherComponents.DotsLoading
 import com.appdev.smartkisan.ui.OtherComponents.NoDialogLoader
 import com.appdev.smartkisan.ui.navigation.Routes
+import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 
 // Main root composable that hosts the news screen
@@ -52,16 +58,18 @@ fun AgricultureNewsRoot(
 ) {
     val newsState by newsViewModel.newsState.collectAsStateWithLifecycle()
 
-
-
     AgricultureNewsScreen(
         uiState = newsState,
         onNewsClick = { news ->
-            Log.d("AZQW", "${news}")
+            Log.d("AZQW", "$news")
             val newsJson = Uri.encode(Json.encodeToString(news))
             controller.navigate(Routes.NewsDetails.route + "/$newsJson")
-        }, onRefresh = {
+        },
+        onRefresh = {
             newsViewModel.refreshNews()
+        },
+        onLoadMore = {
+            newsViewModel.loadMoreNews()
         },
         onBackPress = {
             controller.popBackStack()
@@ -76,6 +84,7 @@ fun AgricultureNewsScreen(
     uiState: NewsState,
     onNewsClick: (New) -> Unit,
     onRefresh: () -> Unit,
+    onLoadMore: () -> Unit,
     onBackPress: () -> Unit
 ) {
     Scaffold(
@@ -92,14 +101,16 @@ fun AgricultureNewsScreen(
                             fontWeight = FontWeight.Bold
                         )
                     }
-                }, navigationIcon = {
+                },
+                navigationIcon = {
                     IconButton(onClick = onBackPress) {
                         Icon(
                             imageVector = Icons.Default.ArrowBack,
                             contentDescription = "Back"
                         )
                     }
-                }, actions = {
+                },
+                actions = {
                     IconButton(onClick = onRefresh) {
                         Icon(
                             imageVector = Icons.Default.Refresh,
@@ -130,7 +141,10 @@ fun AgricultureNewsScreen(
                 uiState.articles.isNotEmpty() -> {
                     NewsContent(
                         news = uiState.articles,
-                        onNewsClick = onNewsClick
+                        onNewsClick = onNewsClick,
+                        isLoadingMore = uiState.isLoadingMore,
+                        hasMoreNews = uiState.hasMoreNews,
+                        onLoadMore = onLoadMore
                     )
                 }
             }
@@ -163,9 +177,16 @@ fun EmptyStateMessage(message: String) {
 @Composable
 fun NewsContent(
     news: List<New>,
-    onNewsClick: (New) -> Unit
+    onNewsClick: (New) -> Unit,
+    isLoadingMore: Boolean,
+    hasMoreNews: Boolean,
+    onLoadMore: () -> Unit
 ) {
+    val listState = rememberLazyListState()
+    val coroutineScope = rememberCoroutineScope()
+
     LazyColumn(
+        state = listState,
         modifier = Modifier
             .fillMaxSize()
             .padding(horizontal = 16.dp, vertical = 16.dp),
@@ -175,12 +196,44 @@ fun NewsContent(
             NewsCard(article = article, onNewsClick = onNewsClick)
         }
 
+        // Load More button or loading indicator
         item {
+            if (hasMoreNews) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth(),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    if (isLoadingMore) {
+                        // Use height modifier to give it appropriate height
+                        DotsLoading(modifier = Modifier.height(150.dp).fillMaxWidth())
+                    } else {
+                        CustomButton(onClick = {
+                            onLoadMore()
+                            // Optionally auto-scroll a bit to show the loading indicator
+                            coroutineScope.launch {
+                                listState.animateScrollBy(200f)
+                            }
+                        }, text = "Load More")
+                    }
+                }
+            } else {
+                // End of list indicator
+                Text(
+                    text = "No more news available",
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 16.dp),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                    textAlign = TextAlign.Center
+                )
+            }
+
             Spacer(modifier = Modifier.height(16.dp))
         }
     }
 }
-
 @Composable
 fun NewsCard(
     article: New,
@@ -192,8 +245,8 @@ fun NewsCard(
             .clickable { onNewsClick(article) },
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface // or any other color
-        ), border = BorderStroke(1.dp, Color.Gray)
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+        ), elevation = CardDefaults.cardElevation(2.dp)
     ) {
         Column(
             modifier = Modifier.fillMaxWidth()
@@ -259,7 +312,7 @@ fun NewsCard(
                         )
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
-                            text = article.publish_date?.split(" ")?.firstOrNull() ?: "", // Get only the date part
+                            text = article.publish_date?.split(" ")?.firstOrNull() ?: "",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                         )

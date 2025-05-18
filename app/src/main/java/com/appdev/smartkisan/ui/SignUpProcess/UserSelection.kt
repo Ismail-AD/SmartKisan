@@ -13,6 +13,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CardElevation
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -75,7 +77,7 @@ fun UserSelection(loginState: UserAuthState, onAction: (UserAuthAction) -> Unit)
             Spacer(modifier = Modifier.height(8.dp))
             selectionCard(
                 title = "Farmer",
-                features = "Disease detection, weather updates, AI chatbot, daily crop suggestions, and more",
+                features = "Disease detection, weather updates, AI chatbot, Explore shops nearby, and more",
                 image = R.drawable.farmerrole,
                 isSelected = loginState.userType == "Farmer"
             ) {
@@ -113,11 +115,12 @@ fun selectionCard(
         },
         modifier = Modifier
             .height(160.dp),
-        shape = RoundedCornerShape(8.dp), // Adjust the corner radius as needed
+        shape = RoundedCornerShape(8.dp),
         border = BorderStroke(
             width = if (isSelected) 2.dp else 0.dp,
-            color = if (isSelected) Color(0xff0FAACB) else Color.Transparent
-        )
+            color = if (isSelected) Color(0xff2E7D32) else Color.Transparent
+        ), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
+        elevation = CardDefaults.cardElevation(3.dp)
     ) {
         Row(
             modifier = Modifier

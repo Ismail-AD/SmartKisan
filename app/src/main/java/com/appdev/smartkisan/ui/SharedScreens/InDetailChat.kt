@@ -44,6 +44,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -269,7 +270,7 @@ fun MessageItem(message: ChatMessage, currentUserId: String, isCurrentUser: Bool
 
     Column(
         modifier = Modifier
-            .widthIn(max = 300.dp)
+            .fillMaxWidth()
             .padding(vertical = 4.dp, horizontal = 8.dp),
         horizontalAlignment = if (isCurrentUser) Alignment.End else Alignment.Start
     ) {
@@ -548,7 +549,7 @@ fun ChatTopBar(
                     modifier = Modifier.size(23.dp)
                 )
             }
-        },
+        },colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
     )
 }
 

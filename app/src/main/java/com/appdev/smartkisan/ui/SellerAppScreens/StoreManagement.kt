@@ -153,14 +153,13 @@ fun StoreManagementScreen(
     ) { innerPadding ->
         Box(
             modifier = Modifier
-                .fillMaxSize()
+                .fillMaxSize().padding(innerPadding)
                 .background(MaterialTheme.colorScheme.background)
 
         ) {
             Column(
                 modifier = Modifier
-                    .fillMaxSize()
-                    .padding(horizontal = 15.dp)
+                    .fillMaxSize().padding(horizontal = 16.dp)
             ) {
                 // Product list
                 when {

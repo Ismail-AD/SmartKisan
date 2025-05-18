@@ -25,8 +25,8 @@ import androidx.navigation.navArgument
 import com.appdev.smartkisan.ViewModel.StoreViewModel
 import com.appdev.smartkisan.data.Product
 import com.appdev.smartkisan.ui.MainAppScreens.BottomBarTab
-import com.appdev.smartkisan.ui.MainAppScreens.GlassmorphicBottomNavigation
 import com.appdev.smartkisan.ui.MainAppScreens.ProductDetails
+import com.appdev.smartkisan.ui.SharedScreens.ChatMessagesRoot
 import com.appdev.smartkisan.ui.SharedScreens.InDetailChatScreen
 import com.appdev.smartkisan.ui.navigation.Routes
 import dev.chrisbanes.haze.HazeState
@@ -44,7 +44,8 @@ fun SellerBaseScreen(onLogout: () -> Unit = {}) {
         Routes.ChatInDetailScreen.route,
         Routes.StoreManagementScreen.route,
         Routes.AddProductScreen.route+ "/{productJson}",
-        Routes.ProductDetailScreen.route + "/{productJson}"
+        Routes.ProductDetailScreen.route + "/{productJson}",
+        Routes.ChatInDetailScreen.route + "/{receiverId}/{name}/{profilePic}"
     )
 
     val selectedTabIndex = when (currentRoute) {
@@ -73,18 +74,18 @@ fun SellerBaseScreen(onLogout: () -> Unit = {}) {
                     color = if (isSystemInDarkTheme()) Color(0xFFFFA574) else Color(0xFFE91E63)
                 )
             )
-            GlassmorphicBottomNavigation(
-                hazeState = hazeState,
-                navController = controller,
-                selectedTabIndex = if (selectedTabIndex >= 0) selectedTabIndex else 0,
-                tabs = tabs
-            ) { selectedTab ->
-                when (selectedTab.title) {
-                    "Home" -> controller.navigate(Routes.SellerHomeScreen.route)
-                    "Inbox" -> controller.navigate(Routes.SellerInboxScreen.route)
-                    "Account" -> controller.navigate(Routes.SellerAccountScreen.route)
-                }
-            }
+//            GlassmorphicBottomNavigation(
+//                hazeState = hazeState,
+//                navController = controller,
+//                selectedTabIndex = if (selectedTabIndex >= 0) selectedTabIndex else 0,
+//                tabs = tabs
+//            ) { selectedTab ->
+//                when (selectedTab.title) {
+//                    "Home" -> controller.navigate(Routes.SellerHomeScreen.route)
+//                    "Inbox" -> controller.navigate(Routes.SellerInboxScreen.route)
+//                    "Account" -> controller.navigate(Routes.SellerAccountScreen.route)
+//                }
+//            }
         }
     }) { innerPadding ->
         NavHost(
@@ -95,7 +96,30 @@ fun SellerBaseScreen(onLogout: () -> Unit = {}) {
             composable(Routes.SellerAccountScreen.route) { SellerProfileRoot{
                 onLogout()
             } }
-            composable(Routes.ChatInDetailScreen.route) {  }
+            composable(
+                route = Routes.ChatInDetailScreen.route + "/{receiverId}/{name}/{profilePic}",
+                arguments = listOf(
+                    navArgument("receiverId") { type = NavType.StringType },
+                    navArgument("name") { type = NavType.StringType },
+                    navArgument("profilePic") {
+                        type = NavType.StringType
+                        // This allows the profilePic parameter to contain slashes
+                        nullable = false
+                    }
+                )
+            ) { backStackEntry ->
+                val userId = backStackEntry.arguments?.getString("receiverId") ?: ""
+                val username = backStackEntry.arguments?.getString("name") ?: ""
+                val encodedProfilePic = backStackEntry.arguments?.getString("profilePic") ?: ""
+                val profilePic = Uri.decode(encodedProfilePic)
+
+                ChatMessagesRoot(
+                    userId,
+                    username,
+                    profilePic,
+                    controller = controller,
+                )
+            }
             composable(Routes.StoreManagementScreen.route) {
                 StoreManagementRoot(
                     controller

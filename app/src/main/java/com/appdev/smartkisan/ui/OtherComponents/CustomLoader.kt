@@ -19,6 +19,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import com.airbnb.lottie.compose.LottieAnimation
 import com.airbnb.lottie.compose.LottieCompositionSpec
@@ -40,39 +41,45 @@ fun CustomLoader(text: String = "Wait for a while...") {
             Dialog(onDismissRequest = { /*TODO*/ }) {
                 Box(
                     modifier = Modifier
-                        .size(120.dp)
+                        .size(130.dp)
                         .background(
                             color = Color.Black,
                             shape = RoundedCornerShape(8.dp)
                         ),
                     contentAlignment = Alignment.Center
                 ) {
-                    // Load the Lottie animation
-                    val composition by rememberLottieComposition(
-                        spec = LottieCompositionSpec.RawRes(R.raw.circleloader)
-                    )
+                    Column(
+                        modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.Center,
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        // Load the Lottie animation
+                        val composition by rememberLottieComposition(
+                            spec = LottieCompositionSpec.RawRes(R.raw.circleloader)
+                        )
 
-                    // Configure the animation
-                    val progress by animateLottieCompositionAsState(
-                        composition = composition,
-                        iterations = LottieConstants.IterateForever, // Loop infinitely
-                        isPlaying = true,
-                        speed = 1.0f,
-                        restartOnPlay = false
-                    )
+                        // Configure the animation
+                        val progress by animateLottieCompositionAsState(
+                            composition = composition,
+                            iterations = LottieConstants.IterateForever, // Loop infinitely
+                            isPlaying = true,
+                            speed = 1.0f,
+                            restartOnPlay = false
+                        )
 
-                    // Display the animation
-                    LottieAnimation(
-                        composition = composition,
-                        progress = { progress },
-                        modifier = Modifier.size(90.dp)
-                    )
+                        // Display the animation
+                        LottieAnimation(
+                            composition = composition,
+                            progress = { progress },
+                            modifier = Modifier.size(80.dp)
+                        )
 
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Text(
-                        text = text,
-                        style = MaterialTheme.typography.bodyLarge
-                    )
+                        Text(
+                            text = text,
+                            fontSize = 13.sp,
+                            modifier = Modifier.padding(vertical = 7.dp),
+                            color = MaterialTheme.colorScheme.surfaceTint
+                        )
+                    }
                 }
             }
         }

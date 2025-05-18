@@ -38,10 +38,14 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -64,6 +68,7 @@ import com.appdev.smartkisan.R
 import com.appdev.smartkisan.States.LocationPermissionState
 import com.appdev.smartkisan.States.WeatherState
 import com.appdev.smartkisan.Utils.SessionManagement
+import com.appdev.smartkisan.Utils.WeatherDrawables
 import com.appdev.smartkisan.ViewModel.HomeScreenViewModel
 import com.appdev.smartkisan.ui.OtherComponents.CustomButton
 import com.appdev.smartkisan.ui.navigation.Routes
@@ -86,9 +91,6 @@ fun HomeRoot(
         permission = Manifest.permission.ACCESS_FINE_LOCATION
     )
     val weatherState by homeScreenViewModel.weatherState.collectAsState()
-
-
-
 
     HomeScreen(weatherState) { action ->
         when (action) {
@@ -346,6 +348,15 @@ fun ActionCard(
         ),
         onClick = onClick
     ) {
+        Box(
+            modifier = Modifier
+                .background(
+                    Brush.verticalGradient(
+                    colors = listOf(Color(0xFF66BB6A), Color(0xFF2E7D32))
+                )), // Apply gradient here
+            contentAlignment = Alignment.Center
+        ) {
+
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -364,6 +375,7 @@ fun ActionCard(
                 fontWeight = FontWeight.Medium,
                 color = Color.White
             )
+        }
         }
     }
 }
@@ -462,17 +474,12 @@ fun WeatherCard(
 
 @Composable
 fun WeatherIcon(iconCode: String) {
-    val context = LocalContext.current
-    val iconUrl = "https://openweathermap.org/img/wn/$iconCode@2x.png"
-
-    AsyncImage(
-        model = ImageRequest.Builder(context)
-            .data(iconUrl)
-            .crossfade(true)
-            .build(),
-        contentDescription = "Weather Icon",
-        placeholder = painterResource(id = R.drawable.day),
-        error = painterResource(id = R.drawable.day),
+    val drawableId by remember {
+        mutableIntStateOf(WeatherDrawables.getDrawableForWeather(iconCode))
+    }
+    Image(
+        painter = painterResource(id = drawableId),
+        contentDescription = "Weather Condition",
         modifier = Modifier.size(110.dp)
     )
 }

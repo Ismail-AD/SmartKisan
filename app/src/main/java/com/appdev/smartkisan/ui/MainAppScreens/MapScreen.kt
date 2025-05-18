@@ -1,5 +1,7 @@
 package com.appdev.smartkisan.ui.MainAppScreens
 
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -8,8 +10,10 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -34,6 +38,8 @@ import com.appdev.smartkisan.States.MapState
 import com.appdev.smartkisan.ViewModel.MapViewModel
 import com.appdev.smartkisan.data.SellerMetaData
 import com.appdev.smartkisan.data.UserEntity
+import com.appdev.smartkisan.ui.OtherComponents.CustomButton
+import com.appdev.smartkisan.ui.OtherComponents.DotsLoading
 import com.appdev.smartkisan.ui.theme.myGreen
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
@@ -48,7 +54,7 @@ fun MapRootScreen(
     navController: NavHostController,
     mapViewModel: MapViewModel = hiltViewModel()
 ) {
-    val state = mapViewModel.state.collectAsStateWithLifecycle().value
+    val state by mapViewModel.state.collectAsStateWithLifecycle()
 
     MapScreen(
         state = state,
@@ -65,6 +71,7 @@ fun MapScreen(
     onAction: (MapActions) -> Unit,
     onBackPressed: () -> Unit
 ) {
+    val context = LocalContext.current
     Box(
         modifier = Modifier.fillMaxSize()
     ) {
@@ -164,7 +171,6 @@ fun MapScreen(
         }
 
 
-
         // Show "Nearby Shops" title with semi-transparent background
         Box(
             modifier = Modifier
@@ -188,6 +194,13 @@ fun MapScreen(
                 sellerMetaData = state.selectedSeller,
                 sellerInfo = state.selectedSellerInfo,
                 isLoading = state.isSellerInfoLoading,
+                onContactClick = { contact ->
+                    val dialIntent = Intent(
+                        Intent.ACTION_DIAL,
+                        Uri.parse("tel:$contact")
+                    )
+                    context.startActivity(dialIntent)
+                },
                 onDismiss = { onAction(MapActions.DismissSellerDetailsDialog) }
             )
         }
@@ -199,6 +212,7 @@ fun SellerDetailsDialog(
     sellerMetaData: SellerMetaData?,
     sellerInfo: UserEntity?,
     isLoading: Boolean,
+    onContactClick: (String) -> Unit,
     onDismiss: () -> Unit
 ) {
     Dialog(onDismissRequest = onDismiss) {
@@ -208,81 +222,88 @@ fun SellerDetailsDialog(
                 .padding(16.dp),
             shape = RoundedCornerShape(16.dp),
             colors = CardDefaults.cardColors(
-                containerColor = Color.White
+                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
             )
         ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                if (isLoading) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(50.dp),
-                        color = myGreen
+            Box { // <-- new container
+                // 1. Close icon
+                IconButton(
+                    onClick = onDismiss,
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Close,
+                        contentDescription = "Close dialog"
                     )
-                    Text(
-                        text = "Loading shop details...",
-                        fontWeight = FontWeight.Medium
-                    )
-                } else {
-                    // Shop name
-                    Text(
-                        text = sellerMetaData?.shopName?.ifEmpty { "Shop" } ?: "Shop",
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = myGreen
-                    )
-
-                    // Shop owner image
-                    if (sellerInfo != null) {
-                        val context = LocalContext.current
-                        AsyncImage(
-                            model = ImageRequest.Builder(context)
-                                .data(sellerInfo.imageUrl)
-                                .crossfade(true)
-                                .build(),
-                            contentDescription = "Shop Owner",
-                            placeholder = painterResource(R.drawable.farmer),
-                            error = painterResource(R.drawable.farmer),
+                }
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    if (isLoading) {
+                        DotsLoading(
                             modifier = Modifier
-                                .size(80.dp)
-                                .clip(CircleShape)
-                                .border(2.dp, myGreen, CircleShape),
-                            contentScale = ContentScale.Crop
+                                .height(150.dp)
+                                .fillMaxWidth()
                         )
-                    }
 
-                    // Owner name
-                    Text(
-                        text = "Owner: ${sellerInfo?.name ?: "Unknown"}",
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Medium
-                    )
+                        Text(
+                            text = "Loading shop details...",
+                            fontWeight = FontWeight.Medium
+                        )
+                    } else {
+                        // Shop name
+                        Text(
+                            text = sellerMetaData?.shopName?.ifEmpty { "Shop" } ?: "Shop",
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = myGreen, modifier = Modifier.padding(top = 20.dp)
+                        )
 
-                    // Contact info
-                    sellerMetaData?.contact?.let { contact ->
-                        if (contact.isNotEmpty()) {
-                            Text(
-                                text = "Contact: $contact",
-                                fontSize = 16.sp
+                        // Shop owner image
+                        if (sellerInfo != null) {
+                            val context = LocalContext.current
+                            AsyncImage(
+                                model = ImageRequest.Builder(context)
+                                    .data(sellerInfo.imageUrl)
+                                    .crossfade(true)
+                                    .build(),
+                                contentDescription = "Shop Owner",
+                                placeholder = painterResource(R.drawable.farmer),
+                                error = painterResource(R.drawable.farmer),
+                                modifier = Modifier
+                                    .size(80.dp)
+                                    .clip(CircleShape)
+                                    .border(2.dp, myGreen, CircleShape),
+                                contentScale = ContentScale.Crop
                             )
                         }
-                    }
 
-                    Spacer(modifier = Modifier.height(8.dp))
+                        // Owner name
+                        Text(
+                            text = "Owner: ${sellerInfo?.name ?: "Unknown"}",
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = MaterialTheme.colorScheme.onBackground
+                        )
 
-                    // Close button
-                    Button(
-                        onClick = onDismiss,
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = myGreen
-                        ),
-                        modifier = Modifier.fillMaxWidth(0.7f)
-                    ) {
-                        Text("Close")
+                        // Contact info
+                        sellerMetaData?.contact?.let { contact ->
+                            if (contact.isNotEmpty()) {
+                                CustomButton(
+                                    onClick = {
+                                        onContactClick(contact)
+                                    },
+                                    text = "Contact: $contact"
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(8.dp))
                     }
                 }
             }

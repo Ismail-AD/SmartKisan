@@ -14,13 +14,18 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -50,7 +55,7 @@ import com.appdev.smartkisan.States.UserAuthState
 import com.appdev.smartkisan.Utils.SessionManagement
 import com.appdev.smartkisan.ViewModel.LoginViewModel
 import com.appdev.smartkisan.ui.OtherComponents.CustomButton
-import com.talhafaki.composablesweettoast.util.SweetToastUtil.SweetError
+import com.appdev.smartkisan.ui.theme.buttonColor
 
 @OptIn(ExperimentalMaterial3Api::class)
 
@@ -75,9 +80,9 @@ fun LoginRoot(
             is UserAuthAction.GoBack -> {
                 navigateUp()
             }
-//            is UserAuthAction.ForgotPasswordScreen -> {
-//                navigateToForgotPassword()
-//            }
+            is UserAuthAction.ForgotPasswordScreen -> {
+                navigateToForgotPassword()
+            }
             else -> loginViewModel.onAction(action)
         }
     })
@@ -86,13 +91,14 @@ fun LoginRoot(
 @Composable
 fun Login(loginState: UserAuthState, onAction: (UserAuthAction) -> Unit) {
     val context = LocalContext.current
-    var showToastState by remember { mutableStateOf(Pair(false, "")) }
 
     LaunchedEffect(loginState.errorMessage) {
         loginState.errorMessage?.let { error ->
-            showToastState = Pair(true, error)
+            onAction(UserAuthAction.ModifyToastState(Pair(true, error)))
+            onAction(UserAuthAction.ClearValidationError)
         }
     }
+
     LaunchedEffect(key1 = loginState.loginSuccess) {
         if (loginState.loginSuccess) {
             onAction(UserAuthAction.NextScreen)
@@ -101,7 +107,7 @@ fun Login(loginState: UserAuthState, onAction: (UserAuthAction) -> Unit) {
 
     LaunchedEffect(loginState.validationError) {
         loginState.validationError?.let { error ->
-            showToastState = Pair(true, error)
+            onAction(UserAuthAction.ModifyToastState(Pair(true, error)))
             onAction(UserAuthAction.ClearValidationError)
         }
     }
@@ -121,7 +127,20 @@ fun Login(loginState: UserAuthState, onAction: (UserAuthAction) -> Unit) {
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Dialog(onDismissRequest = { /*TODO*/ }) {
-                        CircularProgressIndicator()
+                        Box(
+                            modifier = Modifier
+                                .size(80.dp)
+                                .background(
+                                    color = Color.Black,
+                                    shape = RoundedCornerShape(8.dp)
+                                ),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            CircularProgressIndicator(
+                                color = Color.White,
+                                modifier = Modifier.size(40.dp)
+                            )
+                        }
                     }
                 }
             }
@@ -152,61 +171,60 @@ fun Login(loginState: UserAuthState, onAction: (UserAuthAction) -> Unit) {
                     color = MaterialTheme.colorScheme.onBackground
                 )
 
-                // Email Field
-                TextField(
+                // Email Field - Updated to OutlinedTextField with SignUp screen styling
+                OutlinedTextField(
                     value = loginState.email,
                     onValueChange = { onAction(UserAuthAction.EmailChange(it)) },
-                    colors = TextFieldDefaults.colors(
-                        focusedIndicatorColor = Color.Transparent,
-                        unfocusedIndicatorColor = Color.Transparent,
-                        focusedContainerColor = Color(0xFFE4E7EE),
-                        unfocusedContainerColor = Color(0xFFE4E7EE)
-                    ),
+                    label = { Text("Email") },
                     placeholder = { Text("Enter email address") },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
                     modifier = Modifier.fillMaxWidth(),
-                    singleLine = true
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+                    colors = TextFieldDefaults.colors(
+                        focusedIndicatorColor = buttonColor,
+                        unfocusedContainerColor = Color.Transparent,
+                        focusedContainerColor = Color.Transparent,
+                        focusedLabelColor = buttonColor,
+                        cursorColor = buttonColor
+                    )
                 )
 
-                // Password Field
-                TextField(
+                // Password Field - Updated to OutlinedTextField with SignUp screen styling
+                OutlinedTextField(
                     value = loginState.password,
                     onValueChange = { onAction(UserAuthAction.PasswordChange(it)) },
-                    colors = TextFieldDefaults.colors(
-                        focusedIndicatorColor = Color.Transparent,
-                        unfocusedIndicatorColor = Color.Transparent,
-                        focusedContainerColor = Color(0xFFE4E7EE),
-                        unfocusedContainerColor = Color(0xFFE4E7EE)
-                    ),
+                    label = { Text("Password") },
                     placeholder = { Text("Enter password") },
                     visualTransformation = if (loginState.passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                     trailingIcon = {
                         IconButton(onClick = { onAction(UserAuthAction.UpdatePasswordVisible(!loginState.passwordVisible)) }) {
-                            Image(
-                                painter = painterResource(
-                                    id = if (loginState.passwordVisible)
-                                        R.drawable.show
-                                    else
-                                        R.drawable.hide
-                                ),modifier = Modifier.size(27.dp),
-                                contentDescription = if (loginState.passwordVisible) "Hide apassword" else "Show apassword"
+                            Icon(
+                                imageVector = if (loginState.passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
+                                contentDescription = if (loginState.passwordVisible) "Hide password" else "Show password"
                             )
                         }
                     },
                     modifier = Modifier.fillMaxWidth(),
-                    singleLine = true
+                    singleLine = true,
+                    colors = TextFieldDefaults.colors(
+                        focusedIndicatorColor = buttonColor,
+                        unfocusedContainerColor = Color.Transparent,
+                        focusedContainerColor = Color.Transparent,
+                        focusedLabelColor = buttonColor,
+                        cursorColor = buttonColor
+                    )
                 )
 
                 Text(
                     text = "Forgot Password?",
                     modifier = Modifier
                         .clickable {
-//                            onAction(UserAuthAction.ForgotPasswordScreen)
+                            onAction(UserAuthAction.ForgotPasswordScreen)
                         }
                         .align(Alignment.End),
                     fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary
+                    color = MaterialTheme.colorScheme.surfaceContainerLow
                 )
 
                 Row(
@@ -220,7 +238,7 @@ fun Login(loginState: UserAuthState, onAction: (UserAuthAction) -> Unit) {
                     Text(
                         text = "Sign Up",
                         fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary,
+                        color = MaterialTheme.colorScheme.surfaceContainerLow,
                         modifier = Modifier.clickable { onAction(UserAuthAction.SignUpScreen) }
                     )
                 }
@@ -239,16 +257,14 @@ fun Login(loginState: UserAuthState, onAction: (UserAuthAction) -> Unit) {
                 width = 1f
             )
         }
-        if (showToastState.first) {
-            Toast.makeText(context,showToastState.second,Toast.LENGTH_SHORT).show()
-//            SweetError(
-//                message = showToastState.second,
-//                duration = Toast.LENGTH_SHORT,
-//                padding = PaddingValues(top = 16.dp),
-//                contentAlignment = Alignment.TopCenter
-//            )
-            showToastState = Pair(false, "")
 
+        if (loginState.showToastState.first) {
+            Toast.makeText(context, loginState.showToastState.second, Toast.LENGTH_SHORT).show()
+            onAction(
+                UserAuthAction.ModifyToastState(
+                    Pair(false, "")
+                )
+            )
         }
     }
 }
