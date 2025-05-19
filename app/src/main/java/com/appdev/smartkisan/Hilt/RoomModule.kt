@@ -2,8 +2,8 @@ package com.appdev.smartkisan.Hilt
 
 import android.content.Context
 import androidx.room.Room
-import com.appdev.smartkisan.Room.Dao.UserInfoDao
-import com.appdev.smartkisan.Room.RoomDB
+import com.appdev.smartkisan.data.local.db.Dao.UserInfoDao
+import com.appdev.smartkisan.data.local.db.RoomDB
 import com.appdev.smartkisan.Utils.Constants.Companion.DatabaseName
 import dagger.Module
 import dagger.Provides

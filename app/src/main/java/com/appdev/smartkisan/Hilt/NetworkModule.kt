@@ -2,8 +2,8 @@ package com.appdev.smartkisan.Hilt
 
 
 import com.appdev.smartkisan.BuildConfig
-import com.appdev.smartkisan.retrofit.NewsApiService
-import com.appdev.smartkisan.retrofit.WeatherApiService
+import com.appdev.smartkisan.data.remote.retrofit.NewsApiService
+import com.appdev.smartkisan.data.remote.retrofit.WeatherApiService
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn

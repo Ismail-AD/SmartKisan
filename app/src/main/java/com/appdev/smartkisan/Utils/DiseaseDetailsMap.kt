@@ -1,6 +1,6 @@
 package com.appdev.smartkisan.Utils
 
-import com.appdev.smartkisan.States.DiseaseDetails
+import com.appdev.smartkisan.presentation.feature.farmer.diseasedetection.DiseaseDetails
 import com.example.plantdisease.model.CropType
 
 object DiseaseDetailsProvider {
@@ -49,9 +49,6 @@ object DiseaseDetailsProvider {
             "Healthy" to DiseaseDetails(
                 causes = listOf(),
                 treatments = listOf(
-                    "Continue good agricultural practices",
-                    "Maintain balanced fertilization",
-                    "Implement regular monitoring for early disease detection"
                 )
             )
         ),
@@ -99,9 +96,6 @@ object DiseaseDetailsProvider {
             "Healthy" to DiseaseDetails(
                 causes = listOf(),
                 treatments = listOf(
-                    "Continue regular orchard maintenance",
-                    "Implement preventative spraying program",
-                    "Monitor trees regularly for signs of disease"
                 )
             )
         ),
@@ -149,9 +143,6 @@ object DiseaseDetailsProvider {
             "Healthy" to DiseaseDetails(
                 causes = listOf(),
                 treatments = listOf(
-                    "Continue balanced fertilization practices",
-                    "Implement crop rotation",
-                    "Scout regularly for early signs of disease"
                 )
             )
         ),
@@ -277,10 +268,6 @@ object DiseaseDetailsProvider {
             "Healthy" to DiseaseDetails(
                 causes = listOf(),
                 treatments = listOf(
-                    "Maintain consistent watering schedule",
-                    "Apply balanced fertilization",
-                    "Monitor regularly for pests and diseases",
-                    "Provide good air circulation"
                 )
             )
         ),
@@ -315,10 +302,6 @@ object DiseaseDetailsProvider {
             "Healthy" to DiseaseDetails(
                 causes = listOf(),
                 treatments = listOf(
-                    "Hill soil around plants as they grow",
-                    "Maintain even soil moisture",
-                    "Monitor for Colorado potato beetles and other pests",
-                    "Harvest after vines die for better storage"
                 )
             )
         ),
@@ -366,16 +349,12 @@ object DiseaseDetailsProvider {
             "Healthy" to DiseaseDetails(
                 causes = listOf(),
                 treatments = listOf(
-                    "Maintain balanced pruning practices",
-                    "Apply preventative fungicide program",
-                    "Manage canopy for good sunlight exposure",
-                    "Monitor regularly for pest and disease issues"
                 )
             )
         ),
 
         CropType.ORANGE to mapOf(
-            "Citrus Canker" to DiseaseDetails(
+            "Citrus canker" to DiseaseDetails(
                 causes = listOf(
                     "Caused by Xanthomonas citri subsp. citri bacteria",
                     "Spreads through wind-driven rain and tools",
@@ -388,7 +367,7 @@ object DiseaseDetailsProvider {
                     "Disinfect pruning tools between trees"
                 )
             ),
-            "Citrus Greening" to DiseaseDetails(
+            "Citrus greening" to DiseaseDetails(
                 causes = listOf(
                     "Caused by Candidatus Liberibacter asiaticus bacteria",
                     "Transmitted by Asian citrus psyllid (Diaphorina citri)",
@@ -401,7 +380,7 @@ object DiseaseDetailsProvider {
                     "Consult with local agricultural extension service"
                 )
             ),
-            "Citrus Mealybugs" to DiseaseDetails(
+            "Citrus mealybugs" to DiseaseDetails(
                 causes = listOf(
                     "Caused by various mealybug species (Planococcus citri is common)",
                     "Secrete honeydew that leads to sooty mold",
@@ -414,7 +393,7 @@ object DiseaseDetailsProvider {
                     "Address ant populations that protect mealybugs"
                 )
             ),
-            "Powdery Mildew" to DiseaseDetails(
+            "Powdery mildew" to DiseaseDetails(
                 causes = listOf(
                     "Caused by Oidium species fungus (Oidium citri and O. tingitaninum)",
                     "Favored by moderate temperatures (60-80°F) and high humidity",
@@ -427,7 +406,7 @@ object DiseaseDetailsProvider {
                     "Water in morning so leaves dry during day"
                 )
             ),
-            "Spiny Whitefly" to DiseaseDetails(
+            "Spiny whitefly" to DiseaseDetails(
                 causes = listOf(
                     "Caused by Aleurocanthus spiniferus and related species",
                     "Suck plant sap leading to weakened trees",
@@ -440,13 +419,9 @@ object DiseaseDetailsProvider {
                     "Use yellow sticky traps to reduce populations"
                 )
             ),
-            "Healthy" to DiseaseDetails(
+            "Healthy Leaf" to DiseaseDetails(
                 causes = listOf(),
                 treatments = listOf(
-                    "Maintain regular watering schedule",
-                    "Apply appropriate citrus fertilizer",
-                    "Prune for good air circulation",
-                    "Monitor regularly for pest and disease issues"
                 )
             )
         )

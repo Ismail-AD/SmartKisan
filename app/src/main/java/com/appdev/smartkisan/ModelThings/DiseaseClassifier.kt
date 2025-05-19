@@ -18,63 +18,44 @@ import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import kotlin.math.roundToInt
 
-/**
- * Classifies plant diseases from a bitmap image using TensorFlow Lite model
- * @param context Application context to access resources
- * @param bitmap The bitmap image to classify
- * @param cropType The type of crop for which to detect disease
- * @return Pair of (disease name, confidence) or null if classification fails
- */
+
 fun classifyDisease(context: Context, bitmap: Bitmap, cropType: CropType?): Pair<String, Float>? {
     val TAG = "PlantDiseaseClassifier"
 
     try {
-        // Get model file and labels for the specified crop type
         val (modelFileName, classes) = getModelForCrop(cropType ?: CropType.RICE)
 
-        // Model expects 224x224 RGB images
         val inputWidth = 224
         val inputHeight = 224
         val channels = 3
 
-        // IMPORTANT FIX: Convert HARDWARE bitmap to a mutable, CPU-accessible bitmap
-        // Create a copy that's not hardware accelerated
         val bitmapCopy = bitmap.copy(Bitmap.Config.ARGB_8888, true)
 
-        // Preprocess bitmap
         val resized = Bitmap.createScaledBitmap(bitmapCopy, inputWidth, inputHeight, true)
 
-        // Allocate ByteBuffer for input tensor
         val inputBuffer = ByteBuffer.allocateDirect(4 * inputWidth * inputHeight * channels)
         inputBuffer.order(ByteOrder.nativeOrder())
 
-        // Normalize pixel values to [0, 1]
         for (y in 0 until inputHeight) {
             for (x in 0 until inputWidth) {
                 val pixel = resized.getPixel(x, y)
 
-                // Extract and normalize RGB values (scale from 0-255 to 0-1)
                 inputBuffer.putFloat(((pixel shr 16 and 0xFF) / 255.0f)) // R
                 inputBuffer.putFloat(((pixel shr 8 and 0xFF) / 255.0f))  // G
                 inputBuffer.putFloat(((pixel and 0xFF) / 255.0f))        // B
             }
         }
 
-        // Reset position to start for reading
         inputBuffer.rewind()
 
-        // Load TFLite model
         val model = FileUtil.loadMappedFile(context, modelFileName)
         val interpreter = Interpreter(model)
 
-        // Prepare output buffer
         val numClasses = classes.size
         val outputBuffer = Array(1) { FloatArray(numClasses) }
 
-        // Run inference
         interpreter.run(inputBuffer, outputBuffer)
 
-        // Find top prediction
         val confidences = outputBuffer[0]
         var maxIdx = 0
         var maxConfidence = confidences[0]
@@ -86,11 +67,9 @@ fun classifyDisease(context: Context, bitmap: Bitmap, cropType: CropType?): Pair
             }
         }
 
-        // Get readable disease name
         val rawLabel = classes[maxIdx]
         val readableLabel = formatDiseaseLabel(rawLabel)
 
-        // Clean up resources
         interpreter.close()
 
         Log.d(TAG, "Classification result: $readableLabel with confidence: ${maxConfidence * 100}%")
@@ -102,9 +81,7 @@ fun classifyDisease(context: Context, bitmap: Bitmap, cropType: CropType?): Pair
     }
 }
 
-/**
- * Returns model file and labels for each crop type
- */
+
 private fun getModelForCrop(cropType: CropType): Pair<String, List<String>> {
     return when (cropType) {
         CropType.ORANGE -> Pair(
@@ -186,21 +163,17 @@ private fun getModelForCrop(cropType: CropType): Pair<String, List<String>> {
     }
 }
 
-/**
- * Formats the raw model output into readable disease names
- */
+
 private fun formatDiseaseLabel(rawLabel: String): String {
-    // Extract disease part by removing the crop prefix
     val diseasePart = when {
         rawLabel.startsWith("Grape___") -> rawLabel.replace("Grape___", "")
         rawLabel.startsWith("Apple___") -> rawLabel.replace("Apple___", "")
         rawLabel.startsWith("Corn_(maize)___") -> rawLabel.replace("Corn_(maize)___", "")
         rawLabel.startsWith("Tomato___") -> rawLabel.replace("Tomato___", "")
         rawLabel.startsWith("Potato___") -> rawLabel.replace("Potato___", "")
-        else -> rawLabel // For Orange and Rice that don't use prefixes
+        else -> rawLabel
     }
 
-    // Format specific disease names nicely
     return when (diseasePart) {
         "healthy", "Healthy" -> "Healthy"
         "Black_rot" -> "Black Rot"
@@ -213,24 +186,7 @@ private fun formatDiseaseLabel(rawLabel: String): String {
     }
 }
 
-/**
- * Data class to hold classification results
- */
-data class ClassificationResult(
-    val diseaseName: String,
-    val confidence: Float,
-    val isUncertain: Boolean = false
-) {
-    val confidencePercent: Int
-        get() = (confidence * 100).roundToInt()
 
-    val isHealthy: Boolean
-        get() = diseaseName.equals("Healthy", ignoreCase = true)
-}
-
-/**
- * Supported crop types
- */
 enum class CropType {
     ORANGE,
     GRAPES,

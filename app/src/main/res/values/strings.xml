@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">SmartKisan</string>
+    <string name="app_name">AgriCare</string>
     <string name="intro_title_1">Agricultural News</string>
     <string name="intro_title_2">Identify Plant Diseases</string>
     <string name="intro_title_3">Instant Answers with ChatBot</string>
@@ -10,4 +10,5 @@
     <string name="diagnosis">Diagnosis</string>
     <string name="market">Marketplace</string>
     <string name="account">Account</string>
+    <string name="inbox">Inbox</string>
 </resources>
